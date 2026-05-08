@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useAuthStore } from '../../../../src/stores/authStore';
 import { useAllHouseholds } from '../../../../src/hooks/useAllHouseholds';
-import { useTodos, useAllTodos, isJustCompleted } from '../../../../src/hooks/useTodos';
+import { useAllTodos, isJustCompleted } from '../../../../src/hooks/useTodos';
 import { TodoCard } from '../../../../src/components/TodoCard';
 import { AvatarButton } from '../../../../src/components/AvatarButton';
 import { COLORS, SPACING } from '../../../../src/constants';
@@ -22,7 +22,6 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const appUser = useAuthStore((s) => s.appUser);
   const households = useAllHouseholds(appUser?.householdIds ?? []);
-  const { todos } = useTodos(appUser?.activeHouseholdId ?? null, appUser?.uid ?? null);
   const { todos: allTodos, loading: allLoading } = useAllTodos(
     appUser?.householdIds ?? [],
     appUser?.uid ?? null,
@@ -78,7 +77,7 @@ export default function HomeScreen() {
               household={h}
               active={h.id === appUser.activeHouseholdId}
               uid={appUser.uid}
-              todos={todos}
+              todos={allTodos}
               onPress={() => handleSwitchHousehold(h.id)}
             />
           ))}
@@ -151,7 +150,7 @@ function HouseholdCard({
   household: Household;
   active: boolean;
   uid: string;
-  todos: ReturnType<typeof useTodos>['todos'];
+  todos: ReturnType<typeof useAllTodos>['todos'];
   onPress: () => void;
 }) {
   const { t } = useTranslation();
