@@ -154,5 +154,11 @@ export default {
     deleteTitle: 'Delete To-Do',
     deleteMessage: 'Are you sure you want to delete this to-do?',
     overdueBanner: '⚠ This to-do is overdue',
+    recurring: 'Recurring',
+    recurrence_daily: 'Daily',
+    recurrence_weekly: 'Weekly',
+    recurrence_monthly: 'Monthly',
+    recurrenceDayPrefix: 'On the',
+    recurrenceDaySuffix: 'of the month',
   },
 } as const;

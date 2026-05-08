@@ -11,6 +11,7 @@ import { useHouseholdStore } from '../../../src/stores/householdStore';
 import { Todo } from '../../../src/types';
 import { Button } from '../../../src/components/ui/Button';
 import { AssigneePicker } from '../../../src/components/AssigneePicker';
+import { formatRecurrence } from '../../../src/components/RecurrencePicker';
 import { COLORS, SPACING } from '../../../src/constants';
 import { format, isPast } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -96,6 +97,9 @@ export default function TodoDetailScreen() {
         )}
         {todo.completedBy && <InfoRow label={t('todos.completedBy')} value={getName(todo.completedBy)} />}
         <InfoRow label={t('todos.createdBy')} value={getName(todo.createdBy)} />
+        {todo.recurrence && (
+          <InfoRow label={t('todos.recurring')} value={formatRecurrence(todo.recurrence, t) ?? ''} />
+        )}
 
         <AssigneePicker
           label={t('todos.assignTo')}
@@ -111,7 +115,9 @@ export default function TodoDetailScreen() {
 
         <View style={styles.actions}>
           {todo.status === 'pending' ? (
-            <Button label={t('todos.markComplete')} onPress={() => uid && completeTodo(todo.id, uid)} />
+            assignedTo.includes(uid ?? '') ? (
+              <Button label={t('todos.markComplete')} onPress={() => uid && completeTodo(todo.id, uid)} />
+            ) : null
           ) : (
             <Button label={t('todos.reopen')} onPress={() => reopenTodo(todo.id)} variant="secondary" />
           )}

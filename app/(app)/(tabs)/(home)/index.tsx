@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
@@ -6,23 +6,22 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useAuthStore } from '../../../src/stores/authStore';
-import { useAllHouseholds } from '../../../src/hooks/useAllHouseholds';
-import { useTodos, useAllTodos, isJustCompleted } from '../../../src/hooks/useTodos';
-import { TodoCard } from '../../../src/components/TodoCard';
-import { AvatarButton } from '../../../src/components/AvatarButton';
-import { COLORS, SPACING } from '../../../src/constants';
-import { Household } from '../../../src/types';
-import { db } from '../../../src/services/firebase';
+import { useAuthStore } from '../../../../src/stores/authStore';
+import { useAllHouseholds } from '../../../../src/hooks/useAllHouseholds';
+import { useAllTodos, isJustCompleted } from '../../../../src/hooks/useTodos';
+import { TodoCard } from '../../../../src/components/TodoCard';
+import { AvatarButton } from '../../../../src/components/AvatarButton';
+import { COLORS, SPACING } from '../../../../src/constants';
+import { Household } from '../../../../src/types';
+import { db } from '../../../../src/services/firebase';
 import { isPast } from 'date-fns';
-import { emojiForHouseholdAvatar } from '../../../src/constants/avatars';
+import { emojiForHouseholdAvatar } from '../../../../src/constants/avatars';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const appUser = useAuthStore((s) => s.appUser);
   const households = useAllHouseholds(appUser?.householdIds ?? []);
-  const { todos } = useTodos(appUser?.activeHouseholdId ?? null, appUser?.uid ?? null);
   const { todos: allTodos, loading: allLoading } = useAllTodos(
     appUser?.householdIds ?? [],
     appUser?.uid ?? null,
@@ -57,6 +56,9 @@ export default function HomeScreen() {
     await updateDoc(doc(db, 'users', appUser.uid), { activeHouseholdId: householdId });
   }
 
+  const [upcomingOpen, setUpcomingOpen] = useState(true);
+  const [recentOpen, setRecentOpen] = useState(false);
+
   if (!appUser) return null;
 
   return (
@@ -78,7 +80,7 @@ export default function HomeScreen() {
               household={h}
               active={h.id === appUser.activeHouseholdId}
               uid={appUser.uid}
-              todos={todos}
+              todos={allTodos}
               onPress={() => handleSwitchHousehold(h.id)}
             />
           ))}
@@ -91,8 +93,11 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* Upcoming todos */}
-        <Text style={styles.sectionTitle}>{t('home.upcomingTodos')}</Text>
-        {allLoading ? (
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => setUpcomingOpen((v) => !v)} activeOpacity={0.7}>
+          <Text style={styles.chevron}>{upcomingOpen ? '▼' : '▶'}</Text>
+          <Text style={styles.sectionTitle}>{t('home.upcomingTodos')}</Text>
+        </TouchableOpacity>
+        {upcomingOpen && (allLoading ? (
           <ActivityIndicator color={COLORS.primary} />
         ) : upcomingTodos.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -110,11 +115,14 @@ export default function HomeScreen() {
               />
             );
           })
-        )}
+        ))}
 
         {/* Recently completed */}
-        <Text style={styles.sectionTitle}>{t('home.recentlyCompleted')}</Text>
-        {allLoading ? (
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => setRecentOpen((v) => !v)} activeOpacity={0.7}>
+          <Text style={styles.chevron}>{recentOpen ? '▼' : '▶'}</Text>
+          <Text style={styles.sectionTitle}>{t('home.recentlyCompleted')}</Text>
+        </TouchableOpacity>
+        {recentOpen && (allLoading ? (
           <ActivityIndicator color={COLORS.primary} />
         ) : recentlyCompletedTodos.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -132,7 +140,7 @@ export default function HomeScreen() {
               />
             );
           })
-        )}
+        ))}
 
         <TouchableOpacity
           style={styles.addTodoBtn}
@@ -151,13 +159,12 @@ function HouseholdCard({
   household: Household;
   active: boolean;
   uid: string;
-  todos: ReturnType<typeof useTodos>['todos'];
+  todos: ReturnType<typeof useAllTodos>['todos'];
   onPress: () => void;
 }) {
   const { t } = useTranslation();
   const now = new Date();
 
-  // Count only todos visible to this user
   const visibleTodos = todos.filter(
     (todo) => todo.householdId === household.id &&
       todo.status === 'pending' &&
@@ -166,11 +173,6 @@ function HouseholdCard({
   const overdueCount = visibleTodos.filter(
     (todo) => todo.dueDate && isPast(todo.dueDate.toDate())
   ).length;
-  const dueTodayCount = visibleTodos.filter((todo) => {
-    if (!todo.dueDate) return false;
-    const d = todo.dueDate.toDate();
-    return d <= now && !isPast(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
-  }).length;
 
   const memberCount = Object.keys(household.members).length;
 
@@ -211,10 +213,14 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
+  sectionHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+  },
   sectionTitle: {
     fontSize: 13, fontWeight: '700', color: COLORS.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
+  chevron: { fontSize: 14, color: COLORS.textSecondary },
   householdsRow: { marginHorizontal: -SPACING.md, paddingHorizontal: SPACING.md },
   householdCard: {
     width: 160, marginRight: SPACING.sm, padding: SPACING.md,

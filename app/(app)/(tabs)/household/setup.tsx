@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Tou
 import { useRouter, useNavigation } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../../src/stores/authStore';
-import { createHousehold, joinHousehold } from '../../../src/services/households';
-import { Button } from '../../../src/components/ui/Button';
-import { TextInput } from '../../../src/components/ui/TextInput';
-import { COLORS, SPACING } from '../../../src/constants';
-import { useDiscardGuard } from '../../../src/hooks/useDiscardGuard';
-import { HOUSEHOLD_AVATARS } from '../../../src/constants/avatars';
+import { useAuthStore } from '../../../../src/stores/authStore';
+import { createHousehold, joinHousehold } from '../../../../src/services/households';
+import { Button } from '../../../../src/components/ui/Button';
+import { TextInput } from '../../../../src/components/ui/TextInput';
+import { COLORS, SPACING } from '../../../../src/constants';
+import { useDiscardGuard } from '../../../../src/hooks/useDiscardGuard';
+import { HOUSEHOLD_AVATARS } from '../../../../src/constants/avatars';
 
 export default function HouseholdSetupScreen() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function HouseholdSetupScreen() {
     try {
       await createHousehold(householdName.trim(), appUser.uid, appUser.displayName ?? '', appUser.email ?? '', selectedAvatarId);
       setSubmitted(true);
-      router.replace('/(app)/todos');
+      router.replace('/(app)/(tabs)/todos');
     } catch (e: any) {
       setError(e.message ?? t('household.createFailed'));
     } finally {
@@ -51,7 +51,7 @@ export default function HouseholdSetupScreen() {
     try {
       await joinHousehold(inviteCode.trim(), appUser.uid, appUser.displayName ?? '', appUser.email ?? '');
       setSubmitted(true);
-      router.replace('/(app)/todos');
+      router.replace('/(app)/(tabs)/todos');
     } catch (e: any) {
       setError(e.message ?? t('household.joinFailed'));
     } finally {
