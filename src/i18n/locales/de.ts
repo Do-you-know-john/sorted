@@ -154,5 +154,11 @@ export default {
     deleteTitle: 'To-Do löschen',
     deleteMessage: 'Dieses To-Do wirklich löschen?',
     overdueBanner: '⚠ Dieses To-Do ist überfällig',
+    recurring: 'Wiederkehrend',
+    recurrence_daily: 'Täglich',
+    recurrence_weekly: 'Wöchentlich',
+    recurrence_monthly: 'Monatlich',
+    recurrenceDayPrefix: 'Am',
+    recurrenceDaySuffix: 'des Monats',
   },
 } as const;

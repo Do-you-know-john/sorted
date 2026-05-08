@@ -24,6 +24,14 @@ export interface Household {
   avatarId?: string | null;
 }
 
+export type RecurrenceType = 'daily' | 'weekly' | 'monthly';
+
+export interface RecurrenceRule {
+  type: RecurrenceType;
+  days?: number[];      // weekly: 0=Sun 1=Mon … 6=Sat
+  dayOfMonth?: number;  // monthly: 1–31
+}
+
 export type TodoStatus = 'pending' | 'completed';
 
 export interface Todo {
@@ -41,6 +49,7 @@ export interface Todo {
   completedAt: Timestamp | null;
   completedBy: string | null;
   createdAt: Timestamp;
+  recurrence?: RecurrenceRule | null;
 }
 
 export interface AppUser {

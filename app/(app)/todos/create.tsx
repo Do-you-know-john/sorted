@@ -10,8 +10,9 @@ import { createTodo } from '../../../src/services/todos';
 import { Button } from '../../../src/components/ui/Button';
 import { TextInput } from '../../../src/components/ui/TextInput';
 import { COLORS, SPACING } from '../../../src/constants';
-import { HouseholdMember } from '../../../src/types';
+import { HouseholdMember, RecurrenceRule } from '../../../src/types';
 import { AssigneePicker } from '../../../src/components/AssigneePicker';
+import { RecurrencePicker } from '../../../src/components/RecurrencePicker';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import i18n from '../../../src/i18n';
@@ -33,6 +34,7 @@ export default function CreateTodoScreen() {
   const [visibleTo, setVisibleTo] = useState<string[]>([]);
   const [notifyOnComplete, setNotifyOnComplete] = useState<string[]>([]);
   const [notifyOnOverdue, setNotifyOnOverdue] = useState<string[]>([]);
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
   const [dueDate, setDueDate] = useState<Date | null>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,6 +77,7 @@ export default function CreateTodoScreen() {
         notifyOnComplete,
         notifyOnOverdue,
         dueDate,
+        recurrence,
         createdBy: appUser!.uid,
       });
       setSubmitted(true);
@@ -159,6 +162,11 @@ export default function CreateTodoScreen() {
               }}
             />
           )}
+        </View>
+
+        <View>
+          <Text style={styles.sectionLabel}>{t('todos.recurring')}</Text>
+          <RecurrencePicker value={recurrence} onChange={setRecurrence} />
         </View>
 
         <AssigneePicker

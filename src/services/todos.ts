@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   addDoc,
+  getDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -11,7 +12,40 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Todo } from '../types';
+import { Todo, RecurrenceRule } from '../types';
+
+function getNextDueDate(rule: RecurrenceRule, from: Date): Date {
+  const next = new Date(from);
+
+  if (rule.type === 'daily') {
+    next.setDate(next.getDate() + 1);
+    return next;
+  }
+
+  if (rule.type === 'weekly') {
+    const days = [...(rule.days ?? [])].sort((a, b) => a - b);
+    if (days.length === 0) { next.setDate(next.getDate() + 7); return next; }
+    const todayDay = from.getDay();
+    const nextDay = days.find((d) => d > todayDay);
+    if (nextDay !== undefined) {
+      next.setDate(next.getDate() + (nextDay - todayDay));
+    } else {
+      next.setDate(next.getDate() + (7 - todayDay + days[0]));
+    }
+    return next;
+  }
+
+  if (rule.type === 'monthly') {
+    const day = rule.dayOfMonth ?? 1;
+    next.setMonth(next.getMonth() + 1);
+    next.setDate(1);
+    const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+    next.setDate(Math.min(day, lastDay));
+    return next;
+  }
+
+  return next;
+}
 
 export type CreateTodoInput = {
   householdId: string;
@@ -23,13 +57,15 @@ export type CreateTodoInput = {
   notifyOnOverdue: string[];
   dueDate: Date | null;
   createdBy: string;
+  recurrence?: RecurrenceRule | null;
 };
 
 export async function createTodo(input: CreateTodoInput): Promise<string> {
-  const { description, dueDate, ...rest } = input;
+  const { description, dueDate, recurrence, ...rest } = input;
   const ref = await addDoc(collection(db, 'todos'), {
     ...rest,
     ...(description ? { description } : {}),
+    ...(recurrence ? { recurrence } : {}),
     dueDate: dueDate ? Timestamp.fromDate(dueDate) : null,
     status: 'pending',
     completedAt: null,
@@ -40,10 +76,37 @@ export async function createTodo(input: CreateTodoInput): Promise<string> {
 }
 
 export async function completeTodo(todoId: string, uid: string): Promise<void> {
-  await updateDoc(doc(db, 'todos', todoId), {
+  const ref = doc(db, 'todos', todoId);
+  await updateDoc(ref, {
     status: 'completed',
     completedAt: serverTimestamp(),
     completedBy: uid,
+  });
+
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+  const todo = { id: snap.id, ...snap.data() } as Todo;
+  if (!todo.recurrence) return;
+
+  const base = todo.dueDate?.toDate() ?? new Date();
+  const from = base < new Date() ? new Date() : base;
+  const nextDue = getNextDueDate(todo.recurrence, from);
+
+  await addDoc(collection(db, 'todos'), {
+    householdId: todo.householdId,
+    title: todo.title,
+    ...(todo.description ? { description: todo.description } : {}),
+    assignedTo: todo.assignedTo,
+    visibleTo: todo.visibleTo,
+    notifyOnComplete: todo.notifyOnComplete,
+    notifyOnOverdue: todo.notifyOnOverdue,
+    createdBy: todo.createdBy,
+    recurrence: todo.recurrence,
+    dueDate: Timestamp.fromDate(nextDue),
+    status: 'pending',
+    completedAt: null,
+    completedBy: null,
+    createdAt: serverTimestamp(),
   });
 }
 
