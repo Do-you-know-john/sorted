@@ -94,8 +94,8 @@ export default function HomeScreen() {
 
         {/* Upcoming todos */}
         <TouchableOpacity style={styles.sectionHeader} onPress={() => setUpcomingOpen((v) => !v)} activeOpacity={0.7}>
+          <Text style={styles.chevron}>{upcomingOpen ? '▼' : '▶'}</Text>
           <Text style={styles.sectionTitle}>{t('home.upcomingTodos')}</Text>
-          <Text style={styles.chevron}>{upcomingOpen ? '▾' : '▸'}</Text>
         </TouchableOpacity>
         {upcomingOpen && (allLoading ? (
           <ActivityIndicator color={COLORS.primary} />
@@ -119,8 +119,8 @@ export default function HomeScreen() {
 
         {/* Recently completed */}
         <TouchableOpacity style={styles.sectionHeader} onPress={() => setRecentOpen((v) => !v)} activeOpacity={0.7}>
+          <Text style={styles.chevron}>{recentOpen ? '▼' : '▶'}</Text>
           <Text style={styles.sectionTitle}>{t('home.recentlyCompleted')}</Text>
-          <Text style={styles.chevron}>{recentOpen ? '▾' : '▸'}</Text>
         </TouchableOpacity>
         {recentOpen && (allLoading ? (
           <ActivityIndicator color={COLORS.primary} />
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   sectionHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
   },
   sectionTitle: {
     fontSize: 13, fontWeight: '700', color: COLORS.textSecondary,
