@@ -32,7 +32,7 @@ export function TodoCard({ todo }: Props) {
       reopenTodo(todo.id);
     } else {
       Alert.alert(
-        t('todos.completeConfirmTitle'),
+        t('todos.completeConfirmTitle', { title: todo.title }),
         t('todos.completeConfirmMessage'),
         [
           { text: t('common.cancel'), style: 'cancel' },

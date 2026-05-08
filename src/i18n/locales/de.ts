@@ -145,7 +145,7 @@ export default {
     createdBy: 'Erstellt von',
     assignedTo: 'Zugewiesen an',
     markComplete: 'Als erledigt markieren',
-    completeConfirmTitle: 'Als erledigt markieren?',
+    completeConfirmTitle: '{{title}} als erledigt markieren?',
     completeConfirmMessage: 'Ist dieses To-Do wirklich erledigt?',
     reopen: 'Wieder öffnen',
     deleteTitle: 'To-Do löschen',
