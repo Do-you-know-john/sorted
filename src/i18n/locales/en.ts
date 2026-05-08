@@ -161,4 +161,15 @@ export default {
     recurrenceDayPrefix: 'On the',
     recurrenceDaySuffix: 'of the month',
   },
+  shopping: {
+    title: 'Shopping List',
+    manageCategories: 'Categories',
+    selectCategory: 'Select category',
+    noCategory: 'Other',
+    newCategoryPlaceholder: 'New category name...',
+    addPlaceholder: 'Add item...',
+    emptyList: 'Your shopping list is empty.',
+    deleteCategoryTitle: 'Delete category',
+    deleteCategoryMessage: 'Delete category "{{name}}"? Items in it will become uncategorized.',
+  },
 } as const;

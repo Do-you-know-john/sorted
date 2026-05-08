@@ -24,6 +24,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="shopping"
+        options={{
+          title: 'Einkauf',
+          tabBarIcon: ({ color }) => <TabIcon label="🛒" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="household"
         options={{ title: 'Haushalt', tabBarIcon: ({ color }) => <TabIcon label="⚙" color={color} /> }}
       />
