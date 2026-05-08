@@ -15,6 +15,7 @@ import { COLORS, SPACING } from '../../../src/constants';
 import { Household } from '../../../src/types';
 import { db } from '../../../src/services/firebase';
 import { isPast } from 'date-fns';
+import { emojiForHouseholdAvatar } from '../../../src/constants/avatars';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -179,6 +180,9 @@ function HouseholdCard({
       onPress={onPress}
       activeOpacity={0.7}
     >
+      <Text style={styles.householdCardEmoji}>
+        {emojiForHouseholdAvatar(household.avatarId)}
+      </Text>
       <Text style={[styles.householdCardName, active && styles.householdCardNameActive]} numberOfLines={1}>
         {household.name}
       </Text>
@@ -218,6 +222,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border, gap: SPACING.xs,
   },
   householdCardActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  householdCardEmoji: { fontSize: 28 },
   householdCardName: { fontSize: 15, fontWeight: '700', color: COLORS.text },
   householdCardNameActive: { color: COLORS.white },
   householdCardMembers: { fontSize: 12, color: COLORS.textSecondary },
