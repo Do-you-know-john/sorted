@@ -8,6 +8,7 @@ import { useHouseholdStore } from '../../../src/stores/householdStore';
 import { useTodos, useGroupedTodos, isJustCompleted } from '../../../src/hooks/useTodos';
 import { TodoCard } from '../../../src/components/TodoCard';
 import { AvatarButton } from '../../../src/components/AvatarButton';
+import { HouseholdSwitcher } from '../../../src/components/HouseholdSwitcher';
 import { COLORS, SPACING } from '../../../src/constants';
 
 export default function TodosScreen() {
@@ -44,7 +45,9 @@ export default function TodosScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.householdName}>{household?.name ?? ''}</Text>
+        <View style={{ flex: 1 }}>
+          <HouseholdSwitcher />
+        </View>
         <AvatarButton />
       </View>
 
@@ -111,7 +114,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  householdName: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   filters: { flexDirection: 'row', padding: SPACING.md },
   chip: {
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,

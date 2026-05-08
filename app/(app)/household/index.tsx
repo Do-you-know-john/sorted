@@ -10,6 +10,7 @@ import { useAuthStore } from '../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../src/stores/householdStore';
 import { refreshInviteCode, getTodoCount, deleteHousehold, updateHouseholdAvatar } from '../../../src/services/households';
 import { HOUSEHOLD_AVATARS, emojiForHouseholdAvatar } from '../../../src/constants/avatars';
+import { HouseholdSwitcher } from '../../../src/components/HouseholdSwitcher';
 import { logout } from '../../../src/services/auth';
 import { Button } from '../../../src/components/ui/Button';
 import { COLORS, SPACING } from '../../../src/constants';
@@ -115,13 +116,10 @@ export default function HouseholdScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <HouseholdSwitcher size="large" />
+      </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.householdHeader}>
-          <Text style={styles.householdEmoji}>
-            {emojiForHouseholdAvatar(household?.avatarId)}
-          </Text>
-          <Text style={styles.householdName}>{household?.name ?? ''}</Text>
-        </View>
 
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
@@ -235,10 +233,12 @@ export default function HouseholdScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  header: {
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
-  householdHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  householdEmoji: { fontSize: 36 },
-  householdName: { fontSize: 26, fontWeight: '800', color: COLORS.text, flex: 1 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   emojiBtn: {
