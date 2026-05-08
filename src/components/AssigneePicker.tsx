@@ -1,11 +1,12 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { HouseholdMember } from '../types';
 import { Avatar } from './Avatar';
-import { COLORS, SPACING } from '../constants';
+import { useTheme } from '../hooks/useTheme';
+import { Colors, SPACING } from '../constants';
 
 interface Props {
   label: string;
@@ -15,11 +16,51 @@ interface Props {
   currentUserUid?: string;
 }
 
+const makeStyles = (c: Colors) => StyleSheet.create({
+  fieldLabel: {
+    fontSize: 14, fontWeight: '600', color: c.text, marginBottom: SPACING.xs,
+  },
+  trigger: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
+    backgroundColor: c.card,
+  },
+  triggerText: { fontSize: 15, color: c.text, flex: 1 },
+  triggerEmpty: { color: c.textSecondary },
+  chevron: { fontSize: 14, color: c.textSecondary, marginLeft: SPACING.sm },
+
+  overlay: { flex: 1 },
+  dropdown: {
+    position: 'absolute',
+    backgroundColor: c.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: c.border,
+    maxHeight: 260,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  row: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
+    borderBottomWidth: 1, borderBottomColor: c.border,
+  },
+  rowText: { flex: 1, fontSize: 15, color: c.text },
+  noneText: { color: c.textSecondary },
+  checkMark: { fontSize: 16, fontWeight: '700', color: c.primary },
+});
+
 export function AssigneePicker({ label, members, selected, onChange, currentUserUid }: Props) {
   const { t } = useTranslation();
   const triggerRef = useRef<View>(null);
   const [open, setOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 0 });
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   function handleOpen() {
     triggerRef.current?.measure((_fx, _fy, width, height, px, py) => {
@@ -102,41 +143,3 @@ export function AssigneePicker({ label, members, selected, onChange, currentUser
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fieldLabel: {
-    fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: SPACING.xs,
-  },
-  trigger: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 10,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
-    backgroundColor: COLORS.white,
-  },
-  triggerText: { fontSize: 15, color: COLORS.text, flex: 1 },
-  triggerEmpty: { color: COLORS.textSecondary },
-  chevron: { fontSize: 14, color: COLORS.textSecondary, marginLeft: SPACING.sm },
-
-  overlay: { flex: 1 },
-  dropdown: {
-    position: 'absolute',
-    backgroundColor: COLORS.white,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    maxHeight: 260,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  row: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  rowText: { flex: 1, fontSize: 15, color: COLORS.text },
-  noneText: { color: COLORS.textSecondary },
-  checkMark: { fontSize: 16, fontWeight: '700', color: COLORS.primary },
-});

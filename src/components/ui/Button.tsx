@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
-import { COLORS, SPACING } from '../../constants';
+import { useTheme } from '../../hooks/useTheme';
+import { Colors, SPACING } from '../../constants';
 
 interface Props {
   label: string;
@@ -11,14 +12,31 @@ interface Props {
   style?: ViewStyle;
 }
 
+const makeStyles = (c: Colors) => StyleSheet.create({
+  base: {
+    borderRadius: 12,
+    paddingVertical: SPACING.sm + 4,
+    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
+
 export function Button({ label, onPress, loading, disabled, variant = 'primary', style }: Props) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const bg =
-    variant === 'danger' ? COLORS.danger :
-    variant === 'secondary' ? COLORS.primaryLight :
-    COLORS.primary;
+    variant === 'danger' ? c.danger :
+    variant === 'secondary' ? c.primaryLight :
+    c.primary;
 
   const textColor =
-    variant === 'secondary' ? COLORS.primary : COLORS.white;
+    variant === 'secondary' ? c.primary : c.white;
 
   return (
     <TouchableOpacity
@@ -33,17 +51,3 @@ export function Button({ label, onPress, loading, disabled, variant = 'primary',
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: 12,
-    paddingVertical: SPACING.sm + 4,
-    paddingHorizontal: SPACING.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

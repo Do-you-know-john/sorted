@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +9,8 @@ import { useAllHouseholds } from '../../../src/hooks/useAllHouseholds';
 import { createTodo } from '../../../src/services/todos';
 import { Button } from '../../../src/components/ui/Button';
 import { TextInput } from '../../../src/components/ui/TextInput';
-import { COLORS, SPACING } from '../../../src/constants';
+import { Colors, SPACING } from '../../../src/constants';
+import { useTheme } from '../../../src/hooks/useTheme';
 import { HouseholdMember, RecurrenceRule } from '../../../src/types';
 import { AssigneePicker } from '../../../src/components/AssigneePicker';
 import { RecurrencePicker } from '../../../src/components/RecurrencePicker';
@@ -24,6 +25,8 @@ export default function CreateTodoScreen() {
   const appUser = useAuthStore((s) => s.appUser);
   const households = useAllHouseholds(appUser?.householdIds ?? []);
   const dateLocale = i18n.language === 'de' ? de : enUS;
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string>(
     appUser?.activeHouseholdId ?? ''
@@ -215,6 +218,8 @@ function MemberSelector({
   selected: string[];
   onToggle: (uid: string) => void;
 }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View>
       {label && <Text style={styles.sectionLabel}>{label}</Text>}
@@ -230,40 +235,40 @@ function MemberSelector({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   navBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  navTitle: { fontSize: 17, fontWeight: '600', color: COLORS.text },
-  cancel: { color: COLORS.primary, fontSize: 16, width: 80 },
+  navTitle: { fontSize: 17, fontWeight: '600', color: c.text },
+  cancel: { color: c.primary, fontSize: 16, width: 80 },
   form: { padding: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl * 2 },
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: SPACING.xs },
-  sectionHint: { fontSize: 12, color: COLORS.textSecondary, marginBottom: SPACING.xs },
+  sectionLabel: { fontSize: 14, fontWeight: '600', color: c.text, marginBottom: SPACING.xs },
+  sectionHint: { fontSize: 12, color: c.textSecondary, marginBottom: SPACING.xs },
   householdRow: { marginBottom: SPACING.xs },
   householdChip: {
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs + 2,
-    borderRadius: 20, borderWidth: 1, borderColor: COLORS.border,
-    backgroundColor: COLORS.white, marginRight: SPACING.sm,
+    borderRadius: 20, borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.card, marginRight: SPACING.sm,
   },
-  householdChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  householdChipText: { fontSize: 14, color: COLORS.textSecondary },
-  householdChipTextActive: { color: COLORS.white, fontWeight: '600' },
+  householdChipActive: { backgroundColor: c.primary, borderColor: c.primary },
+  householdChipText: { fontSize: 14, color: c.textSecondary },
+  householdChipTextActive: { color: c.white, fontWeight: '600' },
   dateButton: {
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 10,
-    padding: SPACING.md, backgroundColor: COLORS.white,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    padding: SPACING.md, backgroundColor: c.card,
   },
-  dateButtonText: { color: COLORS.text, fontSize: 15 },
-  clearDate: { color: COLORS.danger, fontSize: 13, marginTop: SPACING.xs },
+  dateButtonText: { color: c.text, fontSize: 15 },
+  clearDate: { color: c.danger, fontSize: 13, marginTop: SPACING.xs },
   memberRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm, gap: SPACING.sm },
   memberCheck: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.primary,
+    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: c.primary,
     justifyContent: 'center', alignItems: 'center',
   },
-  memberCheckActive: { backgroundColor: COLORS.primary },
-  memberCheckMark: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
-  memberName: { fontSize: 15, color: COLORS.text },
-  error: { color: COLORS.danger, fontSize: 14 },
+  memberCheckActive: { backgroundColor: c.primary },
+  memberCheckMark: { color: c.white, fontSize: 13, fontWeight: '700' },
+  memberName: { fontSize: 15, color: c.text },
+  error: { color: c.danger, fontSize: 14 },
 });

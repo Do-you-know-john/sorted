@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,8 @@ import { useAuthStore } from '../../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../../src/stores/householdStore';
 import { HouseholdSwitcher } from '../../../../src/components/HouseholdSwitcher';
 import { AvatarButton } from '../../../../src/components/AvatarButton';
-import { COLORS, SPACING } from '../../../../src/constants';
+import { Colors, SPACING } from '../../../../src/constants';
+import { useTheme } from '../../../../src/hooks/useTheme';
 import { ShoppingCategory, ShoppingItem } from '../../../../src/types';
 import {
   subscribeCategories,
@@ -41,6 +42,8 @@ export default function ShoppingScreen() {
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
   const household = useHouseholdStore((s) => s.household);
   const householdId = household?.id ?? null;
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const [categories, setCategories] = useState<ShoppingCategory[]>([]);
   const [items, setItems] = useState<ShoppingItem[]>([]);
@@ -256,14 +259,14 @@ export default function ShoppingScreen() {
             value={inputText}
             onChangeText={setInputText}
             placeholder={t('shopping.addPlaceholder')}
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={c.textSecondary}
             returnKeyType="done"
             onSubmitEditing={handleAddItem}
           />
           <QuantityStepper value={inputQty} onChange={setInputQty} />
           <TouchableOpacity style={styles.addButton} onPress={handleAddItem} disabled={loading || !inputText.trim()}>
             {loading
-              ? <ActivityIndicator color={COLORS.white} size="small" />
+              ? <ActivityIndicator color={c.white} size="small" />
               : <Text style={styles.addButtonText}>+</Text>
             }
           </TouchableOpacity>
@@ -310,7 +313,7 @@ export default function ShoppingScreen() {
                   value={newCatName}
                   onChangeText={setNewCatName}
                   placeholder={t('shopping.newCategoryPlaceholder')}
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={c.textSecondary}
                   onSubmitEditing={handleCreateCategory}
                   returnKeyType="done"
                 />
@@ -336,6 +339,8 @@ function ItemRow({
   onQuantityChange: (qty: number) => void;
   canDelete: boolean;
 }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const locked = item.bought;
   return (
     <View style={[styles.itemRow, locked && styles.itemRowBought]}>
@@ -356,6 +361,8 @@ function ItemRow({
 }
 
 function QuantityStepper({ value, onChange, disabled = false }: { value: number; onChange: (n: number) => void; disabled?: boolean }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={[styles.stepper, disabled && styles.stepperDisabled]}>
       <TouchableOpacity
@@ -379,120 +386,120 @@ function QuantityStepper({ value, onChange, disabled = false }: { value: number;
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border,
   },
   manageBtn: {
     paddingHorizontal: SPACING.sm, paddingVertical: 4,
-    borderRadius: 8, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 8, borderWidth: 1, borderColor: c.border,
   },
-  manageBtnText: { fontSize: 13, color: COLORS.textSecondary },
+  manageBtnText: { fontSize: 13, color: c.textSecondary },
   listContent: { padding: SPACING.md, gap: SPACING.sm, paddingBottom: 120 },
-  emptyText: { textAlign: 'center', color: COLORS.textSecondary, marginTop: SPACING.xl, fontSize: 15 },
+  emptyText: { textAlign: 'center', color: c.textSecondary, marginTop: SPACING.xl, fontSize: 15 },
   section: { gap: 2 },
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
     paddingVertical: SPACING.sm,
   },
-  chevron: { fontSize: 12, color: COLORS.textSecondary },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text, flex: 1 },
-  sectionCount: { fontSize: 12, color: COLORS.textSecondary },
+  chevron: { fontSize: 12, color: c.textSecondary },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: c.text, flex: 1 },
+  sectionCount: { fontSize: 12, color: c.textSecondary },
   itemRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.white, borderRadius: 8, paddingVertical: SPACING.sm,
+    backgroundColor: c.card, borderRadius: 8, paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md, marginBottom: 2,
   },
   itemRowBought: { opacity: 0.45 },
   checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.primary,
+    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: c.primary,
     justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: c.card,
   },
-  checkmark: { color: COLORS.primary, fontSize: 13, fontWeight: '700' },
-  itemName: { flex: 1, fontSize: 15, color: COLORS.text },
-  itemNameBought: { textDecorationLine: 'line-through', color: COLORS.textSecondary },
+  checkmark: { color: c.primary, fontSize: 13, fontWeight: '700' },
+  itemName: { flex: 1, fontSize: 15, color: c.text },
+  itemNameBought: { textDecorationLine: 'line-through', color: c.textSecondary },
   deleteBtn: { padding: 4 },
-  deleteBtnText: { fontSize: 20, color: COLORS.textSecondary, lineHeight: 22 },
+  deleteBtnText: { fontSize: 20, color: c.textSecondary, lineHeight: 22 },
   stepper: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 6, overflow: 'hidden',
+    borderWidth: 1, borderColor: c.border, borderRadius: 6, overflow: 'hidden',
   },
   stepperDisabled: { opacity: 0.35 },
   stepBtn: {
     width: 26, height: 26, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: c.background,
   },
-  stepBtnText: { fontSize: 16, color: COLORS.primary, fontWeight: '600', lineHeight: 20 },
-  stepValue: { minWidth: 22, textAlign: 'center', fontSize: 13, fontWeight: '600', color: COLORS.text },
+  stepBtnText: { fontSize: 16, color: c.primary, fontWeight: '600', lineHeight: 20 },
+  stepValue: { minWidth: 22, textAlign: 'center', fontSize: 13, fontWeight: '600', color: c.text },
   suggestionsBox: {
     position: 'absolute', left: SPACING.md, right: SPACING.md, bottom: 72,
-    backgroundColor: COLORS.white, borderRadius: 10,
-    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: c.card, borderRadius: 10,
+    borderWidth: 1, borderColor: c.border,
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, elevation: 4,
     zIndex: 10,
   },
-  suggestionItem: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  suggestionText: { fontSize: 14, color: COLORS.text },
+  suggestionItem: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: c.border },
+  suggestionText: { fontSize: 14, color: c.text },
   addBar: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderTopWidth: 1, borderTopColor: COLORS.border,
+    backgroundColor: c.card, borderTopWidth: 1, borderTopColor: c.border,
   },
   categoryPill: {
     paddingHorizontal: SPACING.sm, paddingVertical: 6,
-    borderRadius: 16, borderWidth: 1, borderColor: COLORS.primary,
+    borderRadius: 16, borderWidth: 1, borderColor: c.primary,
     maxWidth: 100,
   },
-  categoryPillText: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
+  categoryPillText: { fontSize: 12, color: c.primary, fontWeight: '600' },
   addInput: {
-    flex: 1, fontSize: 15, color: COLORS.text,
+    flex: 1, fontSize: 15, color: c.text,
     paddingVertical: SPACING.sm, paddingHorizontal: SPACING.sm,
-    backgroundColor: COLORS.background, borderRadius: 8,
-    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: c.background, borderRadius: 8,
+    borderWidth: 1, borderColor: c.border,
   },
   addButton: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     justifyContent: 'center', alignItems: 'center',
   },
-  addButtonText: { color: COLORS.white, fontSize: 24, lineHeight: 28, fontWeight: '600' },
+  addButtonText: { color: c.white, fontSize: 24, lineHeight: 28, fontWeight: '600' },
   categoryDropdown: {
     position: 'absolute', left: SPACING.md, bottom: 68,
     minWidth: 160,
-    backgroundColor: COLORS.white, borderRadius: 10,
-    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: c.card, borderRadius: 10,
+    borderWidth: 1, borderColor: c.border,
     shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 8,
     zIndex: 20,
     overflow: 'hidden',
   },
   managerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: SPACING.md },
   managerDialog: {
-    backgroundColor: COLORS.white, borderRadius: 16,
+    backgroundColor: c.card, borderRadius: 16,
     padding: SPACING.md, gap: SPACING.sm, maxHeight: '75%',
   },
-  sheetTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.xs },
-  catOption: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  catOptionText: { fontSize: 15, color: COLORS.text },
-  catOptionActive: { color: COLORS.primary, fontWeight: '700' },
+  sheetTitle: { fontSize: 16, fontWeight: '700', color: c.text, marginBottom: SPACING.xs },
+  catOption: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, borderBottomWidth: 1, borderBottomColor: c.border },
+  catOptionText: { fontSize: 15, color: c.text },
+  catOptionActive: { color: c.primary, fontWeight: '700' },
   catManagerRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  catManagerName: { fontSize: 15, color: COLORS.text, flex: 1 },
-  catDeleteText: { fontSize: 14, color: COLORS.danger },
-  catSaveText: { fontSize: 14, color: COLORS.primary, fontWeight: '600' },
+  catManagerName: { fontSize: 15, color: c.text, flex: 1 },
+  catDeleteText: { fontSize: 14, color: c.danger },
+  catSaveText: { fontSize: 14, color: c.primary, fontWeight: '600' },
   catEditInput: {
-    flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
-    paddingHorizontal: SPACING.sm, paddingVertical: 6, fontSize: 14, color: COLORS.text,
+    flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 8,
+    paddingHorizontal: SPACING.sm, paddingVertical: 6, fontSize: 14, color: c.text,
   },
   newCatRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm },
   newCatBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primary,
+    width: 36, height: 36, borderRadius: 18, backgroundColor: c.primary,
     justifyContent: 'center', alignItems: 'center',
   },
-  newCatBtnText: { color: COLORS.white, fontSize: 22, lineHeight: 26, fontWeight: '600' },
+  newCatBtnText: { color: c.white, fontSize: 22, lineHeight: 26, fontWeight: '600' },
 });

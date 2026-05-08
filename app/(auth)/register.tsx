@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { register } from '../../src/services/auth';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
-import { COLORS, SPACING } from '../../src/constants';
+import { Colors, SPACING } from '../../src/constants';
+import { useTheme } from '../../src/hooks/useTheme';
+
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    backgroundColor: c.background,
+    justifyContent: 'center',
+    padding: SPACING.xl,
+    gap: SPACING.lg,
+  },
+  logo: { fontSize: 40, fontWeight: '800', color: c.primary, textAlign: 'center' },
+  tagline: { fontSize: 16, color: c.textSecondary, textAlign: 'center', marginTop: -SPACING.sm },
+  form: { gap: SPACING.md },
+  error: { color: c.danger, fontSize: 14 },
+  link: { textAlign: 'center', color: c.textSecondary, fontSize: 14 },
+  linkBold: { color: c.primary, fontWeight: '600' },
+});
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -15,6 +32,9 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   async function handleRegister() {
     if (!displayName || !email || !password) { setError(t('auth.fillAllFields')); return; }
@@ -64,19 +84,3 @@ export default function RegisterScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    padding: SPACING.xl,
-    gap: SPACING.lg,
-  },
-  logo: { fontSize: 40, fontWeight: '800', color: COLORS.primary, textAlign: 'center' },
-  tagline: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center', marginTop: -SPACING.sm },
-  form: { gap: SPACING.md },
-  error: { color: COLORS.danger, fontSize: 14 },
-  link: { textAlign: 'center', color: COLORS.textSecondary, fontSize: 14 },
-  linkBold: { color: COLORS.primary, fontWeight: '600' },
-});

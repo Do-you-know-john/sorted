@@ -72,6 +72,8 @@ export interface ShoppingItem {
   createdAt: Timestamp;
 }
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 export interface AppUser {
   uid: string;
   email: string;
@@ -83,4 +85,5 @@ export interface AppUser {
   avatarId?: string | null;
   photoURL?: string | null;
   avatarColor?: string | null;
+  themePreference?: ThemePreference;
 }

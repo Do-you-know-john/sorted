@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,8 @@ import { Todo } from '../../../src/types';
 import { Button } from '../../../src/components/ui/Button';
 import { AssigneePicker } from '../../../src/components/AssigneePicker';
 import { formatRecurrence } from '../../../src/components/RecurrencePicker';
-import { COLORS, SPACING } from '../../../src/constants';
+import { Colors, SPACING } from '../../../src/constants';
+import { useTheme } from '../../../src/hooks/useTheme';
 import { format, isPast } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import i18n from '../../../src/i18n';
@@ -26,6 +27,8 @@ export default function TodoDetailScreen() {
   const [todo, setTodo] = useState<Todo | null>(null);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const dateLocale = i18n.language === 'de' ? de : enUS;
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   useEffect(() => {
     if (!id) return;
@@ -128,6 +131,8 @@ export default function TodoDetailScreen() {
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -136,28 +141,28 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   navBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  back: { color: COLORS.primary, fontSize: 16 },
-  delete: { color: COLORS.danger, fontSize: 16 },
+  back: { color: c.primary, fontSize: 16 },
+  delete: { color: c.danger, fontSize: 16 },
   content: { padding: SPACING.md, gap: SPACING.md },
   overdueBanner: {
-    backgroundColor: COLORS.dangerLight, borderRadius: 10, padding: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.danger,
+    backgroundColor: c.dangerLight, borderRadius: 10, padding: SPACING.sm,
+    borderWidth: 1, borderColor: c.danger,
   },
-  overdueBannerText: { color: COLORS.danger, fontWeight: '600' },
-  title: { fontSize: 24, fontWeight: '700', color: COLORS.text },
-  description: { fontSize: 16, color: COLORS.textSecondary, lineHeight: 22 },
+  overdueBannerText: { color: c.danger, fontWeight: '600' },
+  title: { fontSize: 24, fontWeight: '700', color: c.text },
+  description: { fontSize: 16, color: c.textSecondary, lineHeight: 22 },
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between',
-    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  infoLabel: { fontSize: 14, color: COLORS.textSecondary },
-  infoValue: { fontSize: 14, color: COLORS.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
+  infoLabel: { fontSize: 14, color: c.textSecondary },
+  infoValue: { fontSize: 14, color: c.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
   actions: { marginTop: SPACING.md },
 });

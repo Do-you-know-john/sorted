@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { RecurrenceRule, RecurrenceType } from '../types';
-import { COLORS, SPACING } from '../constants';
+import { useTheme } from '../hooks/useTheme';
+import { Colors, SPACING } from '../constants';
 
 const WEEK_DAYS: { label: string; value: number }[] = [
   { label: 'Mo', value: 1 },
@@ -21,8 +22,62 @@ interface Props {
   onChange: (rule: RecurrenceRule | null) => void;
 }
 
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: {
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    backgroundColor: c.card, overflow: 'hidden',
+  },
+  toggleRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
+  },
+  label: { fontSize: 14, fontWeight: '600', color: c.text },
+  options: {
+    borderTopWidth: 1, borderTopColor: c.border,
+    padding: SPACING.md, gap: SPACING.sm,
+  },
+  typeRow: { flexDirection: 'row', gap: SPACING.sm },
+  typeBtn: {
+    flex: 1, paddingVertical: SPACING.sm, borderRadius: 8,
+    borderWidth: 1, borderColor: c.border, alignItems: 'center',
+    backgroundColor: c.background,
+  },
+  typeBtnActive: { backgroundColor: c.primary, borderColor: c.primary },
+  typeBtnText: { fontSize: 13, fontWeight: '600', color: c.textSecondary },
+  typeBtnTextActive: { color: c.white },
+  daysRow: { flexDirection: 'row', gap: SPACING.xs, flexWrap: 'wrap' },
+  dayBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    borderWidth: 1, borderColor: c.border,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: c.background,
+  },
+  dayBtnActive: { backgroundColor: c.primary, borderColor: c.primary },
+  dayBtnText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+  dayBtnTextActive: { color: c.white },
+  monthlyRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  monthlyLabel: { fontSize: 14, color: c.text },
+  stepper: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: c.border, borderRadius: 8,
+    overflow: 'hidden',
+  },
+  stepBtn: {
+    width: 36, height: 36, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: c.background,
+  },
+  stepBtnText: { fontSize: 20, color: c.primary, fontWeight: '600' },
+  stepValue: {
+    minWidth: 36, textAlign: 'center',
+    fontSize: 15, fontWeight: '600', color: c.text,
+    paddingHorizontal: SPACING.xs,
+  },
+});
+
 export function RecurrencePicker({ value, onChange }: Props) {
   const { t } = useTranslation();
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const enabled = value !== null;
 
   function handleToggle(on: boolean) {
@@ -58,8 +113,8 @@ export function RecurrencePicker({ value, onChange }: Props) {
         <Switch
           value={enabled}
           onValueChange={handleToggle}
-          trackColor={{ false: COLORS.border, true: COLORS.primary }}
-          thumbColor={COLORS.white}
+          trackColor={{ false: c.border, true: c.primary }}
+          thumbColor={c.white}
         />
       </View>
 
@@ -135,55 +190,3 @@ export function formatRecurrence(rule: RecurrenceRule | null | undefined, t: (ke
   }
   return null;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 10,
-    backgroundColor: COLORS.white, overflow: 'hidden',
-  },
-  toggleRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
-  },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-  options: {
-    borderTopWidth: 1, borderTopColor: COLORS.border,
-    padding: SPACING.md, gap: SPACING.sm,
-  },
-  typeRow: { flexDirection: 'row', gap: SPACING.sm },
-  typeBtn: {
-    flex: 1, paddingVertical: SPACING.sm, borderRadius: 8,
-    borderWidth: 1, borderColor: COLORS.border, alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  typeBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeBtnText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-  typeBtnTextActive: { color: COLORS.white },
-  daysRow: { flexDirection: 'row', gap: SPACING.xs, flexWrap: 'wrap' },
-  dayBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    borderWidth: 1, borderColor: COLORS.border,
-    justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  dayBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  dayBtnText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
-  dayBtnTextActive: { color: COLORS.white },
-  monthlyRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  monthlyLabel: { fontSize: 14, color: COLORS.text },
-  stepper: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
-    overflow: 'hidden',
-  },
-  stepBtn: {
-    width: 36, height: 36, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  stepBtnText: { fontSize: 20, color: COLORS.primary, fontWeight: '600' },
-  stepValue: {
-    minWidth: 36, textAlign: 'center',
-    fontSize: 15, fontWeight: '600', color: COLORS.text,
-    paddingHorizontal: SPACING.xs,
-  },
-});

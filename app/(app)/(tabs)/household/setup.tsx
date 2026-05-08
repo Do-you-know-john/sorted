@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,8 @@ import { useAuthStore } from '../../../../src/stores/authStore';
 import { createHousehold, joinHousehold } from '../../../../src/services/households';
 import { Button } from '../../../../src/components/ui/Button';
 import { TextInput } from '../../../../src/components/ui/TextInput';
-import { COLORS, SPACING } from '../../../../src/constants';
+import { Colors, SPACING } from '../../../../src/constants';
+import { useTheme } from '../../../../src/hooks/useTheme';
 import { useDiscardGuard } from '../../../../src/hooks/useDiscardGuard';
 import { HOUSEHOLD_AVATARS } from '../../../../src/constants/avatars';
 
@@ -23,6 +24,8 @@ export default function HouseholdSetupScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const isDirty = !submitted && (householdName.trim().length > 0 || inviteCode.trim().length > 0 || selectedAvatarId !== 'house');
   useDiscardGuard(isDirty);
@@ -125,6 +128,8 @@ export default function HouseholdSetupScreen() {
 }
 
 function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={[styles.tab, active && styles.tabActive]}>
       <Text style={[styles.tabText, active && styles.tabTextActive]} onPress={onPress}>{label}</Text>
@@ -132,39 +137,39 @@ function TabButton({ label, active, onPress }: { label: string; active: boolean;
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   navBar: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  cancelBtn: { color: COLORS.primary, fontSize: 16 },
+  cancelBtn: { color: c.primary, fontSize: 16 },
   content: { flexGrow: 1, justifyContent: 'center', padding: SPACING.xl, gap: SPACING.lg },
-  logo: { fontSize: 40, fontWeight: '800', color: COLORS.primary, textAlign: 'center' },
-  subtitle: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center' },
+  logo: { fontSize: 40, fontWeight: '800', color: c.primary, textAlign: 'center' },
+  subtitle: { fontSize: 16, color: c.textSecondary, textAlign: 'center' },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
+    backgroundColor: c.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     overflow: 'hidden',
   },
   tab: { flex: 1, paddingVertical: SPACING.sm, alignItems: 'center' },
-  tabActive: { backgroundColor: COLORS.primary },
-  tabText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
-  tabTextActive: { color: COLORS.white },
+  tabActive: { backgroundColor: c.primary },
+  tabText: { fontSize: 15, fontWeight: '600', color: c.textSecondary },
+  tabTextActive: { color: c.white },
   form: { gap: SPACING.md },
-  avatarLabel: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginBottom: SPACING.xs },
+  avatarLabel: { fontSize: 13, fontWeight: '600', color: c.text, marginBottom: SPACING.xs },
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   emojiBtn: {
     width: 48, height: 48, borderRadius: 12,
-    backgroundColor: COLORS.white,
-    borderWidth: 2, borderColor: COLORS.border,
+    backgroundColor: c.card,
+    borderWidth: 2, borderColor: c.border,
     justifyContent: 'center', alignItems: 'center',
   },
-  emojiBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  emojiBtnActive: { borderColor: c.primary, backgroundColor: c.primaryLight },
   emojiText: { fontSize: 24 },
-  error: { color: COLORS.danger, fontSize: 14 },
+  error: { color: c.danger, fontSize: 14 },
 });
