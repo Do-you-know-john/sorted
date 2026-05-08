@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../src/services/firebase';
-import { completeTodo, reopenTodo, deleteTodo } from '../../../src/services/todos';
+import { completeTodo, reopenTodo, deleteTodo, updateTodo } from '../../../src/services/todos';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../src/stores/householdStore';
 import { Todo } from '../../../src/types';
@@ -22,14 +22,28 @@ export default function TodoDetailScreen() {
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
   const household = useHouseholdStore((s) => s.household);
   const [todo, setTodo] = useState<Todo | null>(null);
+  const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const dateLocale = i18n.language === 'de' ? de : enUS;
 
   useEffect(() => {
     if (!id) return;
     return onSnapshot(doc(db, 'todos', id), (snap) => {
-      if (snap.exists()) setTodo({ id: snap.id, ...snap.data() } as Todo);
+      if (snap.exists()) {
+        const data = { id: snap.id, ...snap.data() } as Todo;
+        setTodo(data);
+        setAssignedTo(data.assignedTo);
+      }
     });
   }, [id]);
+
+  async function handleToggleAssignee(memberUid: string) {
+    if (!todo) return;
+    const next = assignedTo.includes(memberUid)
+      ? assignedTo.filter((u) => u !== memberUid)
+      : [...assignedTo, memberUid];
+    setAssignedTo(next);
+    await updateTodo(todo.id, { assignedTo: next });
+  }
 
   if (!todo) return null;
 
@@ -81,9 +95,28 @@ export default function TodoDetailScreen() {
         )}
         {todo.completedBy && <InfoRow label={t('todos.completedBy')} value={getName(todo.completedBy)} />}
         <InfoRow label={t('todos.createdBy')} value={getName(todo.createdBy)} />
-        {todo.assignedTo.length > 0 && (
-          <InfoRow label={t('todos.assignedTo')} value={todo.assignedTo.map(getName).join(', ')} />
-        )}
+
+        <View style={styles.assignSection}>
+          <Text style={styles.assignLabel}>{t('todos.assignTo')}</Text>
+          {members.map((m) => {
+            const checked = assignedTo.includes(m.uid);
+            return (
+              <TouchableOpacity
+                key={m.uid}
+                style={styles.memberRow}
+                onPress={() => handleToggleAssignee(m.uid)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                  {checked && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={styles.memberName}>
+                  {m.displayName}{m.uid === uid ? ` ${t('household.you')}` : ''}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         <View style={styles.actions}>
           {todo.status === 'pending' ? (
@@ -130,4 +163,23 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 14, color: COLORS.textSecondary },
   infoValue: { fontSize: 14, color: COLORS.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
   actions: { marginTop: SPACING.md },
+  assignSection: {
+    backgroundColor: COLORS.white, borderRadius: 12, padding: SPACING.md,
+    borderWidth: 1, borderColor: COLORS.border, gap: SPACING.xs,
+  },
+  assignLabel: {
+    fontSize: 13, fontWeight: '700', color: COLORS.textSecondary,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.xs,
+  },
+  memberRow: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: SPACING.sm, paddingVertical: SPACING.sm,
+  },
+  checkbox: {
+    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.primary,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  checkboxChecked: { backgroundColor: COLORS.primary },
+  checkmark: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
+  memberName: { fontSize: 15, color: COLORS.text },
 });
