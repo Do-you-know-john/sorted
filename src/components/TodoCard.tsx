@@ -54,15 +54,7 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
       onPress={() => router.push(`/(app)/todos/${todo.id}`)}
       activeOpacity={0.7}
     >
-      <TouchableOpacity
-        onPress={handleToggle}
-        style={[styles.checkbox, !isCompleted && !isAssignedToMe && styles.checkboxDisabled]}
-        hitSlop={8}
-      >
-        <View style={[styles.checkCircle, isCompleted && styles.checkCircleDone]}>
-          {isCompleted && <Text style={styles.checkMark}>✓</Text>}
-        </View>
-      </TouchableOpacity>
+      <AssigneeAvatars assignedTo={todo.assignedTo} />
 
       <View style={styles.content}>
         <Text style={[styles.title, isCompleted && styles.titleDone]} numberOfLines={1}>
@@ -84,7 +76,15 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
         )}
       </View>
 
-      <AssigneeAvatars assignedTo={todo.assignedTo} />
+      <TouchableOpacity
+        onPress={handleToggle}
+        style={[styles.checkbox, !isCompleted && !isAssignedToMe && styles.checkboxDisabled]}
+        hitSlop={8}
+      >
+        <View style={[styles.checkCircle, isCompleted && styles.checkCircleDone]}>
+          {isCompleted && <Text style={styles.checkMark}>✓</Text>}
+        </View>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -123,7 +123,7 @@ function AssigneeAvatars({ assignedTo }: { assignedTo: string[] }) {
               photoURL={photoURL}
               avatarColor={avatarColor}
               name={name}
-              size={28}
+              size={38}
               selfHighlight={isSelf}
             />
           </View>
@@ -165,16 +165,16 @@ const styles = StyleSheet.create({
 
 const avatarStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  slot: { borderWidth: 2, borderColor: COLORS.white, borderRadius: 16 },
-  overlap: { marginLeft: -8 },
+  slot: { borderWidth: 2, borderColor: COLORS.white, borderRadius: 20 },
+  overlap: { marginLeft: -10 },
   overflowBubble: {
-    width: 28, height: 28, borderRadius: 14,
+    width: 38, height: 38, borderRadius: 19,
     backgroundColor: COLORS.border,
     justifyContent: 'center', alignItems: 'center',
   },
-  overflowText: { fontSize: 10, fontWeight: '700', color: COLORS.textSecondary },
+  overflowText: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary },
   unassigned: {
-    width: 28, height: 28, borderRadius: 14,
+    width: 38, height: 38, borderRadius: 19,
     backgroundColor: COLORS.background,
     borderWidth: 1.5, borderColor: COLORS.border, borderStyle: 'dashed',
     justifyContent: 'center', alignItems: 'center',
