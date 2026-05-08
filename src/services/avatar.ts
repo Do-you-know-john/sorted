@@ -1,0 +1,95 @@
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { doc, writeBatch } from 'firebase/firestore';
+import * as ImagePicker from 'expo-image-picker';
+import { auth, db, storage } from './firebase';
+
+export async function updatePresetAvatar(avatarId: string, householdIds: string[]): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not logged in.');
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'users', user.uid), { avatarId, photoURL: null });
+  for (const hId of householdIds) {
+    batch.update(doc(db, 'households', hId), {
+      [`members.${user.uid}.avatarId`]: avatarId,
+      [`members.${user.uid}.photoURL`]: null,
+    });
+  }
+  await batch.commit();
+}
+
+export async function pickAndUploadAvatarPhoto(householdIds: string[]): Promise<string | null> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not logged in.');
+
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (permission.status !== 'granted') return null;
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.7,
+  });
+
+  if (result.canceled || !result.assets[0]) return null;
+
+  // XMLHttpRequest is required on iOS — fetch() on local file:// URIs is unreliable in RN
+  const blob: Blob = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Failed to read image file.'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', result.assets[0].uri, true);
+    xhr.send(null);
+  });
+
+  const storageRef = ref(storage, `avatars/${user.uid}`);
+  await uploadBytes(storageRef, blob);
+  const photoURL = await getDownloadURL(storageRef);
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'users', user.uid), { photoURL, avatarId: null });
+  for (const hId of householdIds) {
+    batch.update(doc(db, 'households', hId), {
+      [`members.${user.uid}.photoURL`]: photoURL,
+      [`members.${user.uid}.avatarId`]: null,
+    });
+  }
+  await batch.commit();
+
+  return photoURL;
+}
+
+export async function updateAvatarColor(colorId: string, householdIds: string[]): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not logged in.');
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'users', user.uid), { avatarColor: colorId });
+  for (const hId of householdIds) {
+    batch.update(doc(db, 'households', hId), {
+      [`members.${user.uid}.avatarColor`]: colorId,
+    });
+  }
+  await batch.commit();
+}
+
+export async function removeAvatar(householdIds: string[]): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not logged in.');
+
+  try {
+    await deleteObject(ref(storage, `avatars/${user.uid}`));
+  } catch { /* file may not exist */ }
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'users', user.uid), { avatarId: null, photoURL: null });
+  for (const hId of householdIds) {
+    batch.update(doc(db, 'households', hId), {
+      [`members.${user.uid}.avatarId`]: null,
+      [`members.${user.uid}.photoURL`]: null,
+    });
+  }
+  await batch.commit();
+}

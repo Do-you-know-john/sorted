@@ -5,11 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../src/services/firebase';
-import { completeTodo, reopenTodo, deleteTodo } from '../../../src/services/todos';
+import { completeTodo, reopenTodo, deleteTodo, updateTodo } from '../../../src/services/todos';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../src/stores/householdStore';
 import { Todo } from '../../../src/types';
 import { Button } from '../../../src/components/ui/Button';
+import { AssigneePicker } from '../../../src/components/AssigneePicker';
 import { COLORS, SPACING } from '../../../src/constants';
 import { format, isPast } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -22,14 +23,28 @@ export default function TodoDetailScreen() {
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
   const household = useHouseholdStore((s) => s.household);
   const [todo, setTodo] = useState<Todo | null>(null);
+  const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const dateLocale = i18n.language === 'de' ? de : enUS;
 
   useEffect(() => {
     if (!id) return;
     return onSnapshot(doc(db, 'todos', id), (snap) => {
-      if (snap.exists()) setTodo({ id: snap.id, ...snap.data() } as Todo);
+      if (snap.exists()) {
+        const data = { id: snap.id, ...snap.data() } as Todo;
+        setTodo(data);
+        setAssignedTo(data.assignedTo);
+      }
     });
   }, [id]);
+
+  async function handleToggleAssignee(memberUid: string) {
+    if (!todo) return;
+    const next = assignedTo.includes(memberUid)
+      ? assignedTo.filter((u) => u !== memberUid)
+      : [...assignedTo, memberUid];
+    setAssignedTo(next);
+    await updateTodo(todo.id, { assignedTo: next });
+  }
 
   if (!todo) return null;
 
@@ -81,9 +96,18 @@ export default function TodoDetailScreen() {
         )}
         {todo.completedBy && <InfoRow label={t('todos.completedBy')} value={getName(todo.completedBy)} />}
         <InfoRow label={t('todos.createdBy')} value={getName(todo.createdBy)} />
-        {todo.assignedTo.length > 0 && (
-          <InfoRow label={t('todos.assignedTo')} value={todo.assignedTo.map(getName).join(', ')} />
-        )}
+
+        <AssigneePicker
+          label={t('todos.assignTo')}
+          members={members}
+          selected={assignedTo[0] ?? null}
+          onChange={async (uid) => {
+            const next = uid ? [uid] : [];
+            setAssignedTo(next);
+            await updateTodo(todo.id, { assignedTo: next });
+          }}
+          currentUserUid={uid}
+        />
 
         <View style={styles.actions}>
           {todo.status === 'pending' ? (

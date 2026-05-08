@@ -15,6 +15,7 @@ import { COLORS, SPACING } from '../../../src/constants';
 import { Household } from '../../../src/types';
 import { db } from '../../../src/services/firebase';
 import { isPast } from 'date-fns';
+import { emojiForHouseholdAvatar } from '../../../src/constants/avatars';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -98,7 +99,17 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noTodos')}</Text>
           </View>
         ) : (
-          upcomingTodos.map((todo) => <TodoCard key={todo.id} todo={todo} />)
+          upcomingTodos.map((todo) => {
+            const h = households.find((hh) => hh.id === todo.householdId);
+            return (
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                householdName={h?.name}
+                householdAvatarId={h?.avatarId}
+              />
+            );
+          })
         )}
 
         {/* Recently completed */}
@@ -110,7 +121,17 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noRecentlyCompleted')}</Text>
           </View>
         ) : (
-          recentlyCompletedTodos.map((todo) => <TodoCard key={todo.id} todo={todo} />)
+          recentlyCompletedTodos.map((todo) => {
+            const h = households.find((hh) => hh.id === todo.householdId);
+            return (
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                householdName={h?.name}
+                householdAvatarId={h?.avatarId}
+              />
+            );
+          })
         )}
 
         <TouchableOpacity
@@ -159,6 +180,9 @@ function HouseholdCard({
       onPress={onPress}
       activeOpacity={0.7}
     >
+      <Text style={styles.householdCardEmoji}>
+        {emojiForHouseholdAvatar(household.avatarId)}
+      </Text>
       <Text style={[styles.householdCardName, active && styles.householdCardNameActive]} numberOfLines={1}>
         {household.name}
       </Text>
@@ -198,6 +222,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border, gap: SPACING.xs,
   },
   householdCardActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  householdCardEmoji: { fontSize: 28 },
   householdCardName: { fontSize: 15, fontWeight: '700', color: COLORS.text },
   householdCardNameActive: { color: COLORS.white },
   householdCardMembers: { fontSize: 12, color: COLORS.textSecondary },

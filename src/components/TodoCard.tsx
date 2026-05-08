@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { format, isPast } from 'date-fns';
@@ -10,13 +10,17 @@ import { completeTodo, reopenTodo } from '../services/todos';
 import { useAuthStore } from '../stores/authStore';
 import { useHouseholdStore } from '../stores/householdStore';
 import { isJustCompleted } from '../hooks/useTodos';
+import { Avatar } from './Avatar';
+import { emojiForHouseholdAvatar } from '../constants/avatars';
 import i18n from '../i18n';
 
 interface Props {
   todo: Todo;
+  householdName?: string;
+  householdAvatarId?: string | null;
 }
 
-export function TodoCard({ todo }: Props) {
+export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
   const router = useRouter();
   const { t } = useTranslation();
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
@@ -25,12 +29,19 @@ export function TodoCard({ todo }: Props) {
   const isCompleted = todo.status === 'completed';
   const justCompleted = isJustCompleted(todo);
 
-  async function handleToggle() {
+  function handleToggle() {
     if (!uid) return;
     if (isCompleted) {
-      await reopenTodo(todo.id);
+      reopenTodo(todo.id);
     } else {
-      await completeTodo(todo.id, uid);
+      Alert.alert(
+        t('todos.completeConfirmTitle', { title: todo.title }),
+        t('todos.completeConfirmMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('todos.markComplete'), style: 'default', onPress: () => completeTodo(todo.id, uid) },
+        ],
+      );
     }
   }
 
@@ -50,6 +61,11 @@ export function TodoCard({ todo }: Props) {
         <Text style={[styles.title, isCompleted && styles.titleDone]} numberOfLines={1}>
           {todo.title}
         </Text>
+        {householdName && (
+          <Text style={styles.householdLabel}>
+            {emojiForHouseholdAvatar(householdAvatarId)} {householdName}
+          </Text>
+        )}
         {justCompleted && !isOverdue && (
           <Text style={styles.justCompletedLabel}>{t('todos.justCompleted')}</Text>
         )}
@@ -85,24 +101,29 @@ function AssigneeAvatars({ assignedTo }: { assignedTo: string[] }) {
     <View style={avatarStyles.row}>
       {visible.map((memberId, idx) => {
         const member = household?.members[memberId];
-        const name = member?.displayName ?? (memberId === appUser?.uid ? appUser?.displayName : null);
-        const initial = name?.[0]?.toUpperCase() ?? '?';
         const isSelf = memberId === appUser?.uid;
+        const name = member?.displayName ?? (isSelf ? appUser?.displayName : null);
+        const avatarId = isSelf ? appUser?.avatarId : member?.avatarId;
+        const photoURL = isSelf ? appUser?.photoURL : member?.photoURL;
+        const avatarColor = isSelf ? appUser?.avatarColor : member?.avatarColor;
         return (
           <View
             key={memberId}
-            style={[
-              avatarStyles.avatar,
-              isSelf && avatarStyles.avatarSelf,
-              idx > 0 && avatarStyles.avatarOverlap,
-            ]}
+            style={[avatarStyles.slot, idx > 0 && avatarStyles.overlap]}
           >
-            <Text style={avatarStyles.initial}>{initial}</Text>
+            <Avatar
+              avatarId={avatarId}
+              photoURL={photoURL}
+              avatarColor={avatarColor}
+              name={name}
+              size={28}
+              selfHighlight={isSelf}
+            />
           </View>
         );
       })}
       {overflow > 0 && (
-        <View style={[avatarStyles.avatar, avatarStyles.avatarOverflow, avatarStyles.avatarOverlap]}>
+        <View style={[avatarStyles.slot, avatarStyles.overlap, avatarStyles.overflowBubble]}>
           <Text style={avatarStyles.overflowText}>+{overflow}</Text>
         </View>
       )}
@@ -130,21 +151,20 @@ const styles = StyleSheet.create({
   titleDone: { textDecorationLine: 'line-through', color: COLORS.textSecondary },
   due: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   dueOverdue: { color: COLORS.danger, fontWeight: '500' },
+  householdLabel: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
   justCompletedLabel: { fontSize: 12, color: COLORS.success, marginTop: 2, fontWeight: '500' },
 });
 
 const avatarStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  avatar: {
+  slot: { borderWidth: 2, borderColor: COLORS.white, borderRadius: 16 },
+  overlap: { marginLeft: -8 },
+  overflowBubble: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: COLORS.primaryLight,
-    borderWidth: 2, borderColor: COLORS.white,
+    backgroundColor: COLORS.border,
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarSelf: { backgroundColor: COLORS.primary },
-  avatarOverlap: { marginLeft: -8 },
-  avatarOverflow: { backgroundColor: COLORS.border },
-  initial: { fontSize: 11, fontWeight: '700', color: COLORS.primary },
+  overflowText: { fontSize: 10, fontWeight: '700', color: COLORS.textSecondary },
   unassigned: {
     width: 28, height: 28, borderRadius: 14,
     backgroundColor: COLORS.background,
@@ -152,5 +172,4 @@ const avatarStyles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   unassignedDash: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
-  overflowText: { fontSize: 10, fontWeight: '700', color: COLORS.textSecondary },
 });

@@ -8,6 +8,9 @@ export interface HouseholdMember {
   email: string;
   role: UserRole;
   joinedAt: Timestamp;
+  avatarId?: string | null;
+  photoURL?: string | null;
+  avatarColor?: string | null;
 }
 
 export interface Household {
@@ -18,6 +21,7 @@ export interface Household {
   inviteCode: string;
   inviteCodeExpiresAt: Timestamp;
   createdAt: Timestamp;
+  avatarId?: string | null;
 }
 
 export type TodoStatus = 'pending' | 'completed';
@@ -47,4 +51,7 @@ export interface AppUser {
   householdIds: string[];
   activeHouseholdId: string | null;
   createdAt: Timestamp;
+  avatarId?: string | null;
+  photoURL?: string | null;
+  avatarColor?: string | null;
 }

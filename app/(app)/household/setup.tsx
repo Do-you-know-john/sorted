@@ -9,6 +9,7 @@ import { Button } from '../../../src/components/ui/Button';
 import { TextInput } from '../../../src/components/ui/TextInput';
 import { COLORS, SPACING } from '../../../src/constants';
 import { useDiscardGuard } from '../../../src/hooks/useDiscardGuard';
+import { HOUSEHOLD_AVATARS } from '../../../src/constants/avatars';
 
 export default function HouseholdSetupScreen() {
   const router = useRouter();
@@ -18,10 +19,12 @@ export default function HouseholdSetupScreen() {
   const [tab, setTab] = useState<'create' | 'join'>('create');
   const [householdName, setHouseholdName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>('house');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const isDirty = householdName.trim().length > 0 || inviteCode.trim().length > 0;
+  const isDirty = !submitted && (householdName.trim().length > 0 || inviteCode.trim().length > 0 || selectedAvatarId !== 'house');
   useDiscardGuard(isDirty);
 
   async function handleCreate() {
@@ -30,7 +33,8 @@ export default function HouseholdSetupScreen() {
     setError('');
     setLoading(true);
     try {
-      await createHousehold(householdName.trim(), appUser.uid, appUser.displayName ?? '', appUser.email ?? '');
+      await createHousehold(householdName.trim(), appUser.uid, appUser.displayName ?? '', appUser.email ?? '', selectedAvatarId);
+      setSubmitted(true);
       router.replace('/(app)/todos');
     } catch (e: any) {
       setError(e.message ?? t('household.createFailed'));
@@ -46,6 +50,7 @@ export default function HouseholdSetupScreen() {
     setLoading(true);
     try {
       await joinHousehold(inviteCode.trim(), appUser.uid, appUser.displayName ?? '', appUser.email ?? '');
+      setSubmitted(true);
       router.replace('/(app)/todos');
     } catch (e: any) {
       setError(e.message ?? t('household.joinFailed'));
@@ -81,6 +86,20 @@ export default function HouseholdSetupScreen() {
                 onChangeText={setHouseholdName}
                 placeholder={t('household.householdNamePlaceholder')}
               />
+              <View>
+                <Text style={styles.avatarLabel}>{t('household.avatar')}</Text>
+                <View style={styles.emojiGrid}>
+                  {HOUSEHOLD_AVATARS.map((a) => (
+                    <TouchableOpacity
+                      key={a.id}
+                      style={[styles.emojiBtn, selectedAvatarId === a.id && styles.emojiBtnActive]}
+                      onPress={() => setSelectedAvatarId(a.id)}
+                    >
+                      <Text style={styles.emojiText}>{a.emoji}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <Button label={t('household.createHousehold')} onPress={handleCreate} loading={loading} />
             </View>
@@ -137,5 +156,15 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
   tabTextActive: { color: COLORS.white },
   form: { gap: SPACING.md },
+  avatarLabel: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginBottom: SPACING.xs },
+  emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  emojiBtn: {
+    width: 48, height: 48, borderRadius: 12,
+    backgroundColor: COLORS.white,
+    borderWidth: 2, borderColor: COLORS.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  emojiBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  emojiText: { fontSize: 24 },
   error: { color: COLORS.danger, fontSize: 14 },
 });

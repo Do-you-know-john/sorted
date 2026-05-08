@@ -8,7 +8,9 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../src/stores/householdStore';
-import { refreshInviteCode, getTodoCount, deleteHousehold } from '../../../src/services/households';
+import { refreshInviteCode, getTodoCount, deleteHousehold, updateHouseholdAvatar } from '../../../src/services/households';
+import { HOUSEHOLD_AVATARS, emojiForHouseholdAvatar } from '../../../src/constants/avatars';
+import { HouseholdSwitcher } from '../../../src/components/HouseholdSwitcher';
 import { logout } from '../../../src/services/auth';
 import { Button } from '../../../src/components/ui/Button';
 import { COLORS, SPACING } from '../../../src/constants';
@@ -22,6 +24,7 @@ export default function HouseholdScreen() {
   const appUser = useAuthStore((s) => s.appUser);
   const household = useHouseholdStore((s) => s.household);
   const [refreshing, setRefreshing] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -31,6 +34,16 @@ export default function HouseholdScreen() {
   const codeExpiry = household?.inviteCodeExpiresAt?.toDate();
   const codeExpired = codeExpiry ? codeExpiry < new Date() : false;
   const dateLocale = i18n.language === 'de' ? de : enUS;
+
+  async function handleSelectAvatar(avatarId: string) {
+    if (!household) return;
+    setAvatarLoading(true);
+    try {
+      await updateHouseholdAvatar(household.id, avatarId);
+    } finally {
+      setAvatarLoading(false);
+    }
+  }
 
   async function handleShare() {
     if (!household) return;
@@ -103,8 +116,32 @@ export default function HouseholdScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <HouseholdSwitcher size="large" />
+      </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.householdName}>{household?.name ?? ''}</Text>
+
+        <View style={styles.card}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>{t('household.avatar')}</Text>
+            {avatarLoading && <ActivityIndicator size="small" color={COLORS.primary} />}
+          </View>
+          <View style={styles.emojiGrid}>
+            {HOUSEHOLD_AVATARS.map((a) => {
+              const isActive = (household?.avatarId ?? 'house') === a.id;
+              return (
+                <TouchableOpacity
+                  key={a.id}
+                  style={[styles.emojiBtn, isActive && styles.emojiBtnActive]}
+                  onPress={() => handleSelectAvatar(a.id)}
+                  disabled={avatarLoading}
+                >
+                  <Text style={styles.emojiText}>{a.emoji}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('household.inviteCodeLabel')}</Text>
@@ -196,8 +233,22 @@ export default function HouseholdScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  header: {
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
-  householdName: { fontSize: 26, fontWeight: '800', color: COLORS.text },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  emojiBtn: {
+    width: 52, height: 52, borderRadius: 14,
+    backgroundColor: COLORS.background,
+    borderWidth: 2, borderColor: COLORS.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  emojiBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  emojiText: { fontSize: 26 },
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 14,
