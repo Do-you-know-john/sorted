@@ -9,6 +9,10 @@ export default {
     confirm: 'Bestätigen',
     yes: 'Ja',
     no: 'Nein',
+    discardTitle: 'Änderungen verwerfen?',
+    discardMessage: 'Du hast nicht gespeicherte Eingaben, die verloren gehen.',
+    keepEditing: 'Weiter bearbeiten',
+    discard: 'Verwerfen',
   },
   auth: {
     login: 'Anmelden',

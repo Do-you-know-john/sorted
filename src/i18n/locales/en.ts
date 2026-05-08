@@ -9,6 +9,10 @@ export default {
     confirm: 'Confirm',
     yes: 'Yes',
     no: 'No',
+    discardTitle: 'Discard changes?',
+    discardMessage: 'You have unsaved input that will be lost.',
+    keepEditing: 'Keep editing',
+    discard: 'Discard',
   },
   auth: {
     login: 'Log in',

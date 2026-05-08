@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../../src/stores/authStore';
@@ -8,9 +8,11 @@ import { createHousehold, joinHousehold } from '../../../src/services/households
 import { Button } from '../../../src/components/ui/Button';
 import { TextInput } from '../../../src/components/ui/TextInput';
 import { COLORS, SPACING } from '../../../src/constants';
+import { useDiscardGuard } from '../../../src/hooks/useDiscardGuard';
 
 export default function HouseholdSetupScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const appUser = useAuthStore((s) => s.appUser);
   const [tab, setTab] = useState<'create' | 'join'>('create');
@@ -18,6 +20,9 @@ export default function HouseholdSetupScreen() {
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const isDirty = householdName.trim().length > 0 || inviteCode.trim().length > 0;
+  useDiscardGuard(isDirty);
 
   async function handleCreate() {
     if (!householdName.trim()) { setError(t('household.enterName')); return; }
@@ -51,6 +56,13 @@ export default function HouseholdSetupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {navigation.canGoBack() && (
+        <View style={styles.navBar}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.cancelBtn}>{t('common.cancel')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.logo}>Sorted</Text>
@@ -103,6 +115,12 @@ function TabButton({ label, active, onPress }: { label: string; active: boolean;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  navBar: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  cancelBtn: { color: COLORS.primary, fontSize: 16 },
   content: { flexGrow: 1, justifyContent: 'center', padding: SPACING.xl, gap: SPACING.lg },
   logo: { fontSize: 40, fontWeight: '800', color: COLORS.primary, textAlign: 'center' },
   subtitle: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center' },

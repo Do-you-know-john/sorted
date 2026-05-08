@@ -14,6 +14,7 @@ import { HouseholdMember } from '../../../src/types';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import i18n from '../../../src/i18n';
+import { useDiscardGuard } from '../../../src/hooks/useDiscardGuard';
 
 export default function CreateTodoScreen() {
   const router = useRouter();
@@ -35,6 +36,9 @@ export default function CreateTodoScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const isDirty = title.trim().length > 0 || description.trim().length > 0;
+  useDiscardGuard(isDirty);
 
   const selectedHousehold = households.find((h) => h.id === selectedHouseholdId);
   const members: HouseholdMember[] = selectedHousehold
