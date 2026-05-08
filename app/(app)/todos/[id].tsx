@@ -10,6 +10,7 @@ import { useAuthStore } from '../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../src/stores/householdStore';
 import { Todo } from '../../../src/types';
 import { Button } from '../../../src/components/ui/Button';
+import { AssigneePicker } from '../../../src/components/AssigneePicker';
 import { COLORS, SPACING } from '../../../src/constants';
 import { format, isPast } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -96,27 +97,16 @@ export default function TodoDetailScreen() {
         {todo.completedBy && <InfoRow label={t('todos.completedBy')} value={getName(todo.completedBy)} />}
         <InfoRow label={t('todos.createdBy')} value={getName(todo.createdBy)} />
 
-        <View style={styles.assignSection}>
-          <Text style={styles.assignLabel}>{t('todos.assignTo')}</Text>
-          {members.map((m) => {
-            const checked = assignedTo.includes(m.uid);
-            return (
-              <TouchableOpacity
-                key={m.uid}
-                style={styles.memberRow}
-                onPress={() => handleToggleAssignee(m.uid)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                  {checked && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={styles.memberName}>
-                  {m.displayName}{m.uid === uid ? ` ${t('household.you')}` : ''}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <AssigneePicker
+          label={t('todos.assignTo')}
+          members={members}
+          selected={assignedTo}
+          onChange={async (uids) => {
+            setAssignedTo(uids);
+            await updateTodo(todo.id, { assignedTo: uids });
+          }}
+          currentUserUid={uid}
+        />
 
         <View style={styles.actions}>
           {todo.status === 'pending' ? (
@@ -163,23 +153,4 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 14, color: COLORS.textSecondary },
   infoValue: { fontSize: 14, color: COLORS.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
   actions: { marginTop: SPACING.md },
-  assignSection: {
-    backgroundColor: COLORS.white, borderRadius: 12, padding: SPACING.md,
-    borderWidth: 1, borderColor: COLORS.border, gap: SPACING.xs,
-  },
-  assignLabel: {
-    fontSize: 13, fontWeight: '700', color: COLORS.textSecondary,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.xs,
-  },
-  memberRow: {
-    flexDirection: 'row', alignItems: 'center',
-    gap: SPACING.sm, paddingVertical: SPACING.sm,
-  },
-  checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.primary,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  checkboxChecked: { backgroundColor: COLORS.primary },
-  checkmark: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
-  memberName: { fontSize: 15, color: COLORS.text },
 });

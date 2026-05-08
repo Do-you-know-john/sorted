@@ -11,6 +11,7 @@ import { Button } from '../../../src/components/ui/Button';
 import { TextInput } from '../../../src/components/ui/TextInput';
 import { COLORS, SPACING } from '../../../src/constants';
 import { HouseholdMember } from '../../../src/types';
+import { AssigneePicker } from '../../../src/components/AssigneePicker';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import i18n from '../../../src/i18n';
@@ -160,11 +161,12 @@ export default function CreateTodoScreen() {
           )}
         </View>
 
-        <MemberSelector
+        <AssigneePicker
           label={t('todos.assignTo')}
           members={members}
           selected={assignedTo}
-          onToggle={(uid) => toggleMember(uid, assignedTo, setAssignedTo)}
+          onChange={setAssignedTo}
+          currentUserUid={appUser?.uid}
         />
 
         <View>
