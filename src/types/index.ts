@@ -52,6 +52,26 @@ export interface Todo {
   recurrence?: RecurrenceRule | null;
 }
 
+export interface ShoppingCategory {
+  id: string;
+  householdId: string;
+  name: string;
+  sortOrder: number;
+  createdAt: Timestamp;
+}
+
+export interface ShoppingItem {
+  id: string;
+  householdId: string;
+  name: string;
+  quantity: number;
+  categoryId: string | null;
+  bought: boolean;
+  boughtAt: Timestamp | null;
+  createdBy: string;
+  createdAt: Timestamp;
+}
+
 export interface AppUser {
   uid: string;
   email: string;

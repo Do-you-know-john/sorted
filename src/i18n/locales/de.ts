@@ -161,4 +161,15 @@ export default {
     recurrenceDayPrefix: 'Am',
     recurrenceDaySuffix: 'des Monats',
   },
+  shopping: {
+    title: 'Einkaufsliste',
+    manageCategories: 'Kategorien',
+    selectCategory: 'Kategorie wählen',
+    noCategory: 'Sonstiges',
+    newCategoryPlaceholder: 'Neue Kategorie...',
+    addPlaceholder: 'Artikel hinzufügen...',
+    emptyList: 'Die Einkaufsliste ist leer.',
+    deleteCategoryTitle: 'Kategorie löschen',
+    deleteCategoryMessage: 'Kategorie "{{name}}" löschen? Artikel darin werden zu Sonstiges.',
+  },
 } as const;
