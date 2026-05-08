@@ -45,6 +45,7 @@ export interface Todo {
   visibleTo: string[]; // user uids, empty = visible to all members
   notifyOnComplete: string[]; // user uids
   notifyOnOverdue: string[]; // user uids
+  dueFrom: Timestamp | null;
   dueDate: Timestamp | null;
   status: TodoStatus;
   priority?: TodoPriority;

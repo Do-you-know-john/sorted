@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +30,16 @@ export default function HouseholdSetupScreen() {
 
   const isDirty = !submitted && (householdName.trim().length > 0 || inviteCode.trim().length > 0 || selectedAvatarId !== 'house');
   useDiscardGuard(isDirty);
+
+  // When the user switches away from this tab while on the setup screen,
+  // silently reset the stack back to the household index.
+  // Using navigation.reset() intentionally bypasses beforeRemove / useDiscardGuard.
+  useEffect(() => {
+    const tabNav = navigation.getParent();
+    return tabNav?.addListener('blur', () => {
+      navigation.reset({ index: 0, routes: [{ name: 'index' as never }] });
+    });
+  }, [navigation]);
 
   async function handleCreate() {
     if (!householdName.trim()) { setError(t('household.enterName')); return; }

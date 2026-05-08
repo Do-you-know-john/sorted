@@ -28,13 +28,14 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     paddingLeft: SPACING.md + 6, marginBottom: SPACING.sm,
     borderWidth: 1, borderColor: c.border, overflow: 'hidden', gap: SPACING.sm,
   },
-  cardUrgent: { borderColor: c.danger, borderWidth: 2 },
+  cardOverdue: { borderColor: c.danger, borderWidth: 2 },
+  cardDue: { borderColor: c.warning, borderWidth: 2 },
   statusStrip: {
     position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
     backgroundColor: c.primary,
   },
+  statusStripDue: { backgroundColor: c.warning },
   statusStripOverdue: { backgroundColor: c.danger },
-  statusStripUrgent: { backgroundColor: c.warning },
   statusStripDone: { backgroundColor: c.success },
   completed: { opacity: 0.5 },
   checkbox: { justifyContent: 'center', alignItems: 'center' },
@@ -50,6 +51,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   titleDone: { textDecorationLine: 'line-through', color: c.textSecondary },
   due: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   dueOverdue: { color: c.danger, fontWeight: '600' },
+  dueDue: { color: c.warning, fontWeight: '600' },
   householdLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   householdLabel: { fontSize: 11, color: c.textSecondary },
   justCompletedLabel: { fontSize: 12, color: c.success, marginTop: 2, fontWeight: '600' },
@@ -79,8 +81,9 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
   const { t } = useTranslation();
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
   const dateLocale = i18n.language === 'de' ? de : enUS;
-  const isOverdue = todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending';
   const isCompleted = todo.status === 'completed';
+  const isOverdue = !isCompleted && !!todo.dueDate && isPast(todo.dueDate.toDate());
+  const isDue = !isCompleted && !isOverdue && !!todo.dueFrom && isPast(todo.dueFrom.toDate());
   const isUrgent = todo.priority === 'urgent' && !isCompleted;
   const justCompleted = isJustCompleted(todo);
   const isAssignedToMe = !!uid && todo.assignedTo.includes(uid);
@@ -107,11 +110,11 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
 
   return (
     <TouchableOpacity
-      style={[styles.card, isUrgent && !isCompleted && styles.cardUrgent, isCompleted && styles.completed]}
+      style={[styles.card, isUrgent && !isCompleted && (isOverdue ? styles.cardOverdue : styles.cardDue), isCompleted && styles.completed]}
       onPress={() => router.push(`/(app)/todos/${todo.id}`)}
       activeOpacity={0.7}
     >
-      <View style={[styles.statusStrip, isUrgent && !isOverdue && styles.statusStripUrgent, isOverdue && styles.statusStripOverdue, isCompleted && styles.statusStripDone]} />
+      <View style={[styles.statusStrip, isDue && styles.statusStripDue, isOverdue && styles.statusStripOverdue, isCompleted && styles.statusStripDone]} />
       <AssigneeAvatars assignedTo={todo.assignedTo} />
 
       <View style={styles.content}>
@@ -127,10 +130,17 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
         {justCompleted && !isOverdue && (
           <Text style={styles.justCompletedLabel}>{t('todos.justCompleted')}</Text>
         )}
-        {todo.dueDate && !isCompleted && (
-          <Text style={[styles.due, isOverdue && styles.dueOverdue]}>
-            {isOverdue ? `⚠ ${t('todos.statusOverdue')} · ` : ''}
-            {format(todo.dueDate.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}
+        {!isCompleted && (isOverdue || isDue || todo.dueFrom || todo.dueDate) && (
+          <Text style={[styles.due, isOverdue && styles.dueOverdue, isDue && styles.dueDue]}>
+            {isOverdue
+              ? `⚠ ${t('todos.statusOverdue')} · ${format(todo.dueDate!.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}`
+              : isDue && todo.dueDate
+              ? `${t('todos.dueBefore')} ${format(todo.dueDate.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}`
+              : todo.dueFrom
+              ? `${t('todos.dueFromLabel')} ${format(todo.dueFrom.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}`
+              : todo.dueDate
+              ? format(todo.dueDate.toDate(), 'MMM d, HH:mm', { locale: dateLocale })
+              : null}
           </Text>
         )}
       </View>

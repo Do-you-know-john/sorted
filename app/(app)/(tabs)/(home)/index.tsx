@@ -94,13 +94,19 @@ export default function HomeScreen() {
 
   // Due todos assigned to self or created by self
   const upcomingTodos = allTodos
-    .filter((todo) =>
-      todo.status === 'pending' &&
-      todo.dueDate &&
-      todo.dueDate.toDate() <= now &&
-      (todo.assignedTo.includes(uid) || todo.createdBy === uid)
-    )
-    .sort((a, b) => a.dueDate!.toDate().getTime() - b.dueDate!.toDate().getTime())
+    .filter((todo) => {
+      if (todo.status !== 'pending') return false;
+      if (!todo.assignedTo.includes(uid) && todo.createdBy !== uid) return false;
+      // New-style: show once dueFrom has passed (in window or overdue)
+      if (todo.dueFrom) return todo.dueFrom.toDate() <= now;
+      // Old-style (no dueFrom): show once deadline has passed
+      return !!(todo.dueDate && todo.dueDate.toDate() <= now);
+    })
+    .sort((a, b) => {
+      const aMs = (a.dueFrom ?? a.dueDate)?.toDate().getTime() ?? 0;
+      const bMs = (b.dueFrom ?? b.dueDate)?.toDate().getTime() ?? 0;
+      return aMs - bMs;
+    })
     .slice(0, 10);
 
   // Just-completed todos (< 24h) assigned to self or created by self

@@ -54,7 +54,8 @@ export default function TodoDetailScreen() {
 
   const members = household ? Object.values(household.members) : [];
   const getName = (memberUid: string) => members.find((m) => m.uid === memberUid)?.displayName ?? memberUid;
-  const isOverdue = todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending';
+  const isOverdue = !!(todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending');
+  const isDue = !isOverdue && !!(todo.dueFrom && isPast(todo.dueFrom.toDate()) && todo.status === 'pending');
 
   async function handleDelete() {
     Alert.alert(t('todos.deleteTitle'), t('todos.deleteMessage'), [
@@ -68,7 +69,9 @@ export default function TodoDetailScreen() {
 
   const statusLabel = todo.status === 'completed'
     ? t('todos.statusCompleted')
-    : isOverdue ? t('todos.statusOverdue') : t('todos.statusPending');
+    : isOverdue ? t('todos.statusOverdue')
+    : isDue ? t('todos.statusDue')
+    : t('todos.statusPending');
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -87,13 +90,21 @@ export default function TodoDetailScreen() {
             <Text style={styles.overdueBannerText}>{t('todos.overdueBanner')}</Text>
           </View>
         )}
+        {isDue && (
+          <View style={styles.dueBanner}>
+            <Text style={styles.dueBannerText}>{t('todos.dueBanner')}</Text>
+          </View>
+        )}
 
         <Text style={styles.title}>{todo.title}</Text>
         {todo.description ? <Text style={styles.description}>{todo.description}</Text> : null}
 
         <InfoRow label={t('todos.status')} value={statusLabel} />
+        {todo.dueFrom && (
+          <InfoRow label={t('todos.dueFrom')} value={format(todo.dueFrom.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
+        )}
         {todo.dueDate && (
-          <InfoRow label={t('todos.due')} value={format(todo.dueDate.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
+          <InfoRow label={t('todos.dueUntil')} value={format(todo.dueDate.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
         )}
         {todo.completedAt && (
           <InfoRow label={t('todos.completedAt')} value={format(todo.completedAt.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
@@ -163,6 +174,11 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.danger,
   },
   overdueBannerText: { color: c.danger, fontWeight: '600' },
+  dueBanner: {
+    backgroundColor: c.warningLight, borderRadius: 10, padding: SPACING.sm,
+    borderWidth: 1, borderColor: c.warning,
+  },
+  dueBannerText: { color: c.warning, fontWeight: '600' },
   title: { fontSize: 24, fontWeight: '700', color: c.text },
   description: { fontSize: 16, color: c.textSecondary, lineHeight: 22 },
   infoRow: {

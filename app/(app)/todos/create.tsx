@@ -39,8 +39,11 @@ export default function CreateTodoScreen() {
   const [notifyOnOverdue, setNotifyOnOverdue] = useState<string[]>([]);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
   const [isUrgent, setIsUrgent] = useState(false);
-  const [dueDate, setDueDate] = useState<Date | null>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dueFrom, setDueFrom] = useState<Date | null>(new Date());
+  const [dueDate, setDueDate] = useState<Date | null>(new Date(Date.now() + 24 * 3600_000));
+  const [dueUntilManuallySet, setDueUntilManuallySet] = useState(false);
+  const [showDueFromPicker, setShowDueFromPicker] = useState(false);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -80,6 +83,7 @@ export default function CreateTodoScreen() {
         visibleTo,
         notifyOnComplete,
         notifyOnOverdue,
+        dueFrom,
         dueDate,
         recurrence,
         priority: isUrgent ? 'urgent' : 'normal',
@@ -143,29 +147,57 @@ export default function CreateTodoScreen() {
         />
 
         <View>
-          <Text style={styles.sectionLabel}>{t('todos.dueDate')}</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+          <Text style={styles.sectionLabel}>{t('todos.dueWindow')}</Text>
+
+          <Text style={styles.subLabel}>{t('todos.dueFrom')}</Text>
+          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDueFromPicker(true)}>
+            <Text style={styles.dateButtonText}>
+              {dueFrom
+                ? format(dueFrom, 'MMM d, yyyy · HH:mm', { locale: dateLocale })
+                : t('todos.immediately')}
+            </Text>
+          </TouchableOpacity>
+          {showDueFromPicker && (
+            <DateTimePicker
+              value={dueFrom ?? new Date()}
+              mode="datetime"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              onChange={(_, date) => {
+                setShowDueFromPicker(Platform.OS === 'ios');
+                if (date) {
+                  setDueFrom(date);
+                  if (!dueUntilManuallySet) {
+                    setDueDate(new Date(date.getTime() + 24 * 3600_000));
+                  }
+                }
+              }}
+            />
+          )}
+
+          <Text style={[styles.subLabel, { marginTop: SPACING.sm }]}>{t('todos.dueUntil')}</Text>
+          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDueDatePicker(true)}>
             <Text style={styles.dateButtonText}>
               {dueDate
                 ? format(dueDate, 'MMM d, yyyy · HH:mm', { locale: dateLocale })
                 : t('todos.noDueDate')}
             </Text>
           </TouchableOpacity>
-          {dueDate && (
-            <TouchableOpacity onPress={() => setDueDate(null)}>
-              <Text style={styles.clearDate}>{t('todos.clearDate')}</Text>
-            </TouchableOpacity>
-          )}
-          {showDatePicker && (
+          {showDueDatePicker && (
             <DateTimePicker
               value={dueDate ?? new Date()}
               mode="datetime"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
               onChange={(_, date) => {
-                setShowDatePicker(Platform.OS === 'ios');
-                if (date) setDueDate(date);
+                setShowDueDatePicker(Platform.OS === 'ios');
+                if (date) { setDueDate(date); setDueUntilManuallySet(true); }
               }}
             />
+          )}
+
+          {(dueFrom || dueDate) && (
+            <TouchableOpacity onPress={() => { setDueFrom(null); setDueDate(null); setDueUntilManuallySet(false); }}>
+              <Text style={styles.clearDate}>{t('todos.clearWindow')}</Text>
+            </TouchableOpacity>
           )}
         </View>
 
@@ -285,6 +317,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   memberCheckActive: { backgroundColor: c.primary },
   memberCheckMark: { color: c.white, fontSize: 13, fontWeight: '700' },
   memberName: { fontSize: 15, color: c.text },
+  subLabel: { fontSize: 12, fontWeight: '600', color: c.textSecondary, marginBottom: SPACING.xs },
   toggleRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: SPACING.sm,

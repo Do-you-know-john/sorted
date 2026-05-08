@@ -55,6 +55,7 @@ export type CreateTodoInput = {
   visibleTo: string[];
   notifyOnComplete: string[];
   notifyOnOverdue: string[];
+  dueFrom: Date | null;
   dueDate: Date | null;
   createdBy: string;
   recurrence?: RecurrenceRule | null;
@@ -62,12 +63,13 @@ export type CreateTodoInput = {
 };
 
 export async function createTodo(input: CreateTodoInput): Promise<string> {
-  const { description, dueDate, recurrence, priority, ...rest } = input;
+  const { description, dueFrom, dueDate, recurrence, priority, ...rest } = input;
   const ref = await addDoc(collection(db, 'todos'), {
     ...rest,
     ...(description ? { description } : {}),
     ...(recurrence ? { recurrence } : {}),
     ...(priority && priority !== 'normal' ? { priority } : {}),
+    dueFrom: dueFrom ? Timestamp.fromDate(dueFrom) : null,
     dueDate: dueDate ? Timestamp.fromDate(dueDate) : null,
     status: 'pending',
     completedAt: null,
@@ -94,6 +96,13 @@ export async function completeTodo(todoId: string, uid: string): Promise<void> {
   const from = base < new Date() ? new Date() : base;
   const nextDue = getNextDueDate(todo.recurrence, from);
 
+  // Preserve the dueFrom→dueDate window length for the next recurrence
+  let nextDueFrom: Timestamp | null = null;
+  if (todo.dueFrom && todo.dueDate) {
+    const windowMs = todo.dueDate.toDate().getTime() - todo.dueFrom.toDate().getTime();
+    nextDueFrom = Timestamp.fromDate(new Date(nextDue.getTime() - windowMs));
+  }
+
   await addDoc(collection(db, 'todos'), {
     householdId: todo.householdId,
     title: todo.title,
@@ -104,6 +113,7 @@ export async function completeTodo(todoId: string, uid: string): Promise<void> {
     notifyOnOverdue: todo.notifyOnOverdue,
     createdBy: todo.createdBy,
     recurrence: todo.recurrence,
+    dueFrom: nextDueFrom,
     dueDate: Timestamp.fromDate(nextDue),
     status: 'pending',
     completedAt: null,
