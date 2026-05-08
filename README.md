@@ -14,6 +14,7 @@ A cross-platform mobile app (iOS & Android) for managing shared household to-dos
 - **Avatar indicators** — each task card shows who it's assigned to; unassigned tasks are clearly marked
 - **Household deletion** — admin-only, two-step confirmation (member/todo count warning + name confirmation)
 - **Profile management** — change display name, password, and app language (DE / EN)
+- **Avatars** — choose from 12 preset emoji avatars or upload a custom photo; shown on task cards and the profile button
 - **Localisation** — German and English, auto-detected from the device
 
 ---
@@ -137,10 +138,13 @@ users/{uid}
   uid, email, displayName, fcmToken
   householdIds: string[]
   activeHouseholdId: string | null
+  avatarId: string | null      // preset emoji avatar ID
+  photoURL: string | null      // Firebase Storage URL for custom photo
 
 households/{householdId}
   name, createdBy, inviteCode, inviteCodeExpiresAt
-  members: { [uid]: { uid, displayName, email, role, joinedAt } }
+  members: { [uid]: { uid, displayName, email, role, joinedAt,
+                      avatarId?, photoURL? } }  // denormalized for card rendering
 
 todos/{todoId}
   householdId, title, description?

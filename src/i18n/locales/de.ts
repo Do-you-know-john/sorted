@@ -51,6 +51,11 @@ export default {
     languageDe: 'Deutsch',
     nameFailed: 'Name konnte nicht geändert werden.',
     passwordFailed: 'Passwort konnte nicht geändert werden.',
+    avatar: 'Profilbild',
+    uploadPhoto: 'Foto hochladen',
+    removePhoto: 'Foto entfernen',
+    avatarSaved: 'Profilbild aktualisiert.',
+    avatarFailed: 'Profilbild konnte nicht aktualisiert werden.',
   },
   household: {
     setup: 'Richte deinen Haushalt ein, um loszulegen.',

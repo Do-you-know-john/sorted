@@ -10,6 +10,7 @@ import { completeTodo, reopenTodo } from '../services/todos';
 import { useAuthStore } from '../stores/authStore';
 import { useHouseholdStore } from '../stores/householdStore';
 import { isJustCompleted } from '../hooks/useTodos';
+import { Avatar } from './Avatar';
 import i18n from '../i18n';
 
 interface Props {
@@ -85,24 +86,27 @@ function AssigneeAvatars({ assignedTo }: { assignedTo: string[] }) {
     <View style={avatarStyles.row}>
       {visible.map((memberId, idx) => {
         const member = household?.members[memberId];
-        const name = member?.displayName ?? (memberId === appUser?.uid ? appUser?.displayName : null);
-        const initial = name?.[0]?.toUpperCase() ?? '?';
         const isSelf = memberId === appUser?.uid;
+        const name = member?.displayName ?? (isSelf ? appUser?.displayName : null);
+        const avatarId = isSelf ? appUser?.avatarId : member?.avatarId;
+        const photoURL = isSelf ? appUser?.photoURL : member?.photoURL;
         return (
           <View
             key={memberId}
-            style={[
-              avatarStyles.avatar,
-              isSelf && avatarStyles.avatarSelf,
-              idx > 0 && avatarStyles.avatarOverlap,
-            ]}
+            style={[avatarStyles.slot, idx > 0 && avatarStyles.overlap]}
           >
-            <Text style={avatarStyles.initial}>{initial}</Text>
+            <Avatar
+              avatarId={avatarId}
+              photoURL={photoURL}
+              name={name}
+              size={28}
+              selfHighlight={isSelf}
+            />
           </View>
         );
       })}
       {overflow > 0 && (
-        <View style={[avatarStyles.avatar, avatarStyles.avatarOverflow, avatarStyles.avatarOverlap]}>
+        <View style={[avatarStyles.slot, avatarStyles.overlap, avatarStyles.overflowBubble]}>
           <Text style={avatarStyles.overflowText}>+{overflow}</Text>
         </View>
       )}
@@ -135,16 +139,14 @@ const styles = StyleSheet.create({
 
 const avatarStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  avatar: {
+  slot: { borderWidth: 2, borderColor: COLORS.white, borderRadius: 16 },
+  overlap: { marginLeft: -8 },
+  overflowBubble: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: COLORS.primaryLight,
-    borderWidth: 2, borderColor: COLORS.white,
+    backgroundColor: COLORS.border,
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarSelf: { backgroundColor: COLORS.primary },
-  avatarOverlap: { marginLeft: -8 },
-  avatarOverflow: { backgroundColor: COLORS.border },
-  initial: { fontSize: 11, fontWeight: '700', color: COLORS.primary },
+  overflowText: { fontSize: 10, fontWeight: '700', color: COLORS.textSecondary },
   unassigned: {
     width: 28, height: 28, borderRadius: 14,
     backgroundColor: COLORS.background,
@@ -152,5 +154,4 @@ const avatarStyles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   unassignedDash: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
-  overflowText: { fontSize: 10, fontWeight: '700', color: COLORS.textSecondary },
 });

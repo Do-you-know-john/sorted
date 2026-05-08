@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
 import { updateDisplayName, changePassword } from '../../src/services/profile';
+import { updatePresetAvatar, pickAndUploadAvatarPhoto, removeAvatar } from '../../src/services/avatar';
 import { logout } from '../../src/services/auth';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
+import { Avatar } from '../../src/components/Avatar';
+import { PRESET_AVATARS } from '../../src/constants/avatars';
 import { COLORS, SPACING } from '../../src/constants';
 import i18n from '../../src/i18n';
 
@@ -26,6 +29,10 @@ export default function ProfileScreen() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
+
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarSuccess, setAvatarSuccess] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
 
   async function handleSaveName() {
     if (!displayName.trim()) return;
@@ -60,6 +67,51 @@ export default function ProfileScreen() {
     }
   }
 
+  async function handleSelectPreset(avatarId: string) {
+    if (!appUser) return;
+    setAvatarError('');
+    setAvatarSuccess(false);
+    setAvatarLoading(true);
+    try {
+      await updatePresetAvatar(avatarId, appUser.householdIds);
+      setAvatarSuccess(true);
+    } catch {
+      setAvatarError(t('profile.avatarFailed'));
+    } finally {
+      setAvatarLoading(false);
+    }
+  }
+
+  async function handleUploadPhoto() {
+    if (!appUser) return;
+    setAvatarError('');
+    setAvatarSuccess(false);
+    setAvatarLoading(true);
+    try {
+      const url = await pickAndUploadAvatarPhoto(appUser.householdIds);
+      if (url) setAvatarSuccess(true);
+    } catch {
+      setAvatarError(t('profile.avatarFailed'));
+    } finally {
+      setAvatarLoading(false);
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    if (!appUser) return;
+    setAvatarError('');
+    setAvatarSuccess(false);
+    setAvatarLoading(true);
+    try {
+      await removeAvatar(appUser.householdIds);
+      setAvatarSuccess(true);
+    } catch {
+      setAvatarError(t('profile.avatarFailed'));
+    } finally {
+      setAvatarLoading(false);
+    }
+  }
+
   async function handleLogout() {
     Alert.alert(t('auth.logoutConfirmTitle'), t('auth.logoutConfirmMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -84,12 +136,51 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(appUser?.displayName ?? '?')[0].toUpperCase()}
-            </Text>
-          </View>
+          <Avatar
+            avatarId={appUser?.avatarId}
+            photoURL={appUser?.photoURL}
+            name={appUser?.displayName ?? appUser?.email}
+            size={72}
+            selfHighlight
+          />
           <Text style={styles.emailText}>{appUser?.email}</Text>
+        </View>
+
+        {/* Avatar picker */}
+        <View style={styles.card}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>{t('profile.avatar')}</Text>
+            {avatarLoading && <ActivityIndicator size="small" color={COLORS.primary} />}
+          </View>
+          <View style={styles.emojiGrid}>
+            {PRESET_AVATARS.map((a) => {
+              const isActive = appUser?.avatarId === a.id && !appUser?.photoURL;
+              return (
+                <TouchableOpacity
+                  key={a.id}
+                  style={[styles.emojiBtn, isActive && styles.emojiBtnActive]}
+                  onPress={() => handleSelectPreset(a.id)}
+                  disabled={avatarLoading}
+                >
+                  <Text style={styles.emojiText}>{a.emoji}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={styles.uploadBtn}
+            onPress={handleUploadPhoto}
+            disabled={avatarLoading}
+          >
+            <Text style={styles.uploadBtnText}>{t('profile.uploadPhoto')}</Text>
+          </TouchableOpacity>
+          {(appUser?.avatarId || appUser?.photoURL) && (
+            <TouchableOpacity onPress={handleRemoveAvatar} disabled={avatarLoading}>
+              <Text style={styles.removeText}>{t('profile.removePhoto')}</Text>
+            </TouchableOpacity>
+          )}
+          {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
+          {avatarSuccess ? <Text style={styles.success}>{t('profile.avatarSaved')}</Text> : null}
         </View>
 
         {/* Display Name */}
@@ -167,20 +258,34 @@ const styles = StyleSheet.create({
   close: { fontSize: 18, color: COLORS.textSecondary, width: 32 },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   avatarSection: { alignItems: 'center', paddingVertical: SPACING.md, gap: SPACING.sm },
-  avatar: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center',
-  },
-  avatarText: { fontSize: 30, fontWeight: '700', color: COLORS.primary },
   emailText: { fontSize: 14, color: COLORS.textSecondary },
   card: {
     backgroundColor: COLORS.white, borderRadius: 14, padding: SPACING.md,
     gap: SPACING.sm, borderWidth: 1, borderColor: COLORS.border,
   },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   cardTitle: {
     fontSize: 13, fontWeight: '700', color: COLORS.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.xs,
+    flex: 1,
   },
+  emojiGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm,
+  },
+  emojiBtn: {
+    width: 52, height: 52, borderRadius: 14,
+    backgroundColor: COLORS.background,
+    borderWidth: 2, borderColor: COLORS.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  emojiBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  emojiText: { fontSize: 26 },
+  uploadBtn: {
+    borderWidth: 1, borderColor: COLORS.primary, borderRadius: 10,
+    paddingVertical: SPACING.sm, alignItems: 'center',
+  },
+  uploadBtnText: { color: COLORS.primary, fontWeight: '600', fontSize: 15 },
+  removeText: { color: COLORS.danger, fontSize: 13, textAlign: 'center' },
   error: { color: COLORS.danger, fontSize: 13 },
   success: { color: COLORS.success, fontSize: 13 },
   langRow: { flexDirection: 'row', gap: SPACING.sm },

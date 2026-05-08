@@ -51,6 +51,11 @@ export default {
     languageDe: 'Deutsch',
     nameFailed: 'Failed to update name.',
     passwordFailed: 'Failed to change password.',
+    avatar: 'Profile picture',
+    uploadPhoto: 'Upload photo',
+    removePhoto: 'Remove photo',
+    avatarSaved: 'Profile picture updated.',
+    avatarFailed: 'Failed to update profile picture.',
   },
   household: {
     setup: 'Set up your household to get started.',

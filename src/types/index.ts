@@ -8,6 +8,8 @@ export interface HouseholdMember {
   email: string;
   role: UserRole;
   joinedAt: Timestamp;
+  avatarId?: string | null;
+  photoURL?: string | null;
 }
 
 export interface Household {
@@ -47,4 +49,6 @@ export interface AppUser {
   householdIds: string[];
   activeHouseholdId: string | null;
   createdAt: Timestamp;
+  avatarId?: string | null;
+  photoURL?: string | null;
 }
