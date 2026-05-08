@@ -111,7 +111,9 @@ export default function TodoDetailScreen() {
 
         <View style={styles.actions}>
           {todo.status === 'pending' ? (
-            <Button label={t('todos.markComplete')} onPress={() => uid && completeTodo(todo.id, uid)} />
+            assignedTo.includes(uid ?? '') ? (
+              <Button label={t('todos.markComplete')} onPress={() => uid && completeTodo(todo.id, uid)} />
+            ) : null
           ) : (
             <Button label={t('todos.reopen')} onPress={() => reopenTodo(todo.id)} variant="secondary" />
           )}

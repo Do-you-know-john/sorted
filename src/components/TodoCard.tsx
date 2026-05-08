@@ -28,11 +28,14 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
   const isOverdue = todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending';
   const isCompleted = todo.status === 'completed';
   const justCompleted = isJustCompleted(todo);
+  const isAssignedToMe = !!uid && todo.assignedTo.includes(uid);
 
   function handleToggle() {
     if (!uid) return;
     if (isCompleted) {
       reopenTodo(todo.id);
+    } else if (!isAssignedToMe) {
+      return;
     } else {
       Alert.alert(
         t('todos.completeConfirmTitle', { title: todo.title }),
@@ -51,7 +54,11 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
       onPress={() => router.push(`/(app)/todos/${todo.id}`)}
       activeOpacity={0.7}
     >
-      <TouchableOpacity onPress={handleToggle} style={styles.checkbox} hitSlop={8}>
+      <TouchableOpacity
+        onPress={handleToggle}
+        style={[styles.checkbox, !isCompleted && !isAssignedToMe && styles.checkboxDisabled]}
+        hitSlop={8}
+      >
         <View style={[styles.checkCircle, isCompleted && styles.checkCircleDone]}>
           {isCompleted && <Text style={styles.checkMark}>✓</Text>}
         </View>
@@ -140,6 +147,7 @@ const styles = StyleSheet.create({
   overdue: { borderColor: COLORS.danger, backgroundColor: COLORS.dangerLight },
   completed: { opacity: 0.55 },
   checkbox: { justifyContent: 'center', alignItems: 'center' },
+  checkboxDisabled: { opacity: 0.3 },
   checkCircle: {
     width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.primary,
     justifyContent: 'center', alignItems: 'center',
