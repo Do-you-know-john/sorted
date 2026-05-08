@@ -28,6 +28,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     paddingLeft: SPACING.md + 6, marginBottom: SPACING.sm,
     borderWidth: 1, borderColor: c.border, overflow: 'hidden', gap: SPACING.sm,
   },
+  cardUrgent: { borderColor: c.danger, borderWidth: 2 },
   statusStrip: {
     position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
     backgroundColor: c.primary,
@@ -105,7 +106,7 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
 
   return (
     <TouchableOpacity
-      style={[styles.card, isCompleted && styles.completed]}
+      style={[styles.card, isUrgent && !isCompleted && styles.cardUrgent, isCompleted && styles.completed]}
       onPress={() => router.push(`/(app)/todos/${todo.id}`)}
       activeOpacity={0.7}
     >
@@ -114,7 +115,7 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
 
       <View style={styles.content}>
         <Text style={[styles.title, isCompleted && styles.titleDone]} numberOfLines={1}>
-          {isUrgent && !isOverdue && '🚩 '}{todo.title}
+          {isUrgent && '🚩 '}{todo.title}
         </Text>
         {householdName && (
           <Text style={styles.householdLabel}>
