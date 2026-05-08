@@ -17,6 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../../src/stores/householdStore';
+import { HouseholdSwitcher } from '../../../../src/components/HouseholdSwitcher';
+import { AvatarButton } from '../../../../src/components/AvatarButton';
 import { COLORS, SPACING } from '../../../../src/constants';
 import { ShoppingCategory, ShoppingItem } from '../../../../src/types';
 import {
@@ -161,10 +163,13 @@ export default function ShoppingScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('shopping.title')}</Text>
+        <View style={{ flex: 1 }}>
+          <HouseholdSwitcher />
+        </View>
         <TouchableOpacity onPress={() => setShowCategoryManager(true)} style={styles.manageBtn}>
           <Text style={styles.manageBtnText}>{t('shopping.manageCategories')}</Text>
         </TouchableOpacity>
+        <AvatarButton />
       </View>
 
       {/* Item list */}
@@ -381,7 +386,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   manageBtn: {
     paddingHorizontal: SPACING.sm, paddingVertical: 4,
     borderRadius: 8, borderWidth: 1, borderColor: COLORS.border,
