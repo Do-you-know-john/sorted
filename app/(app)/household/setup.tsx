@@ -22,8 +22,9 @@ export default function HouseholdSetupScreen() {
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>('house');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const isDirty = householdName.trim().length > 0 || inviteCode.trim().length > 0 || selectedAvatarId !== 'house';
+  const isDirty = !submitted && (householdName.trim().length > 0 || inviteCode.trim().length > 0 || selectedAvatarId !== 'house');
   useDiscardGuard(isDirty);
 
   async function handleCreate() {
@@ -33,6 +34,7 @@ export default function HouseholdSetupScreen() {
     setLoading(true);
     try {
       await createHousehold(householdName.trim(), appUser.uid, appUser.displayName ?? '', appUser.email ?? '', selectedAvatarId);
+      setSubmitted(true);
       router.replace('/(app)/todos');
     } catch (e: any) {
       setError(e.message ?? t('household.createFailed'));
@@ -48,6 +50,7 @@ export default function HouseholdSetupScreen() {
     setLoading(true);
     try {
       await joinHousehold(inviteCode.trim(), appUser.uid, appUser.displayName ?? '', appUser.email ?? '');
+      setSubmitted(true);
       router.replace('/(app)/todos');
     } catch (e: any) {
       setError(e.message ?? t('household.joinFailed'));

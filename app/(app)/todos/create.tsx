@@ -36,8 +36,9 @@ export default function CreateTodoScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const isDirty = title.trim().length > 0 || description.trim().length > 0;
+  const isDirty = !submitted && (title.trim().length > 0 || description.trim().length > 0);
   useDiscardGuard(isDirty);
 
   const selectedHousehold = households.find((h) => h.id === selectedHouseholdId);
@@ -75,6 +76,7 @@ export default function CreateTodoScreen() {
         dueDate,
         createdBy: appUser!.uid,
       });
+      setSubmitted(true);
       router.back();
     } catch (e: any) {
       setError(e.message ?? t('todos.createFailed'));
