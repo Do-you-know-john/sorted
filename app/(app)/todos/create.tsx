@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +38,7 @@ export default function CreateTodoScreen() {
   const [notifyOnComplete, setNotifyOnComplete] = useState<string[]>([]);
   const [notifyOnOverdue, setNotifyOnOverdue] = useState<string[]>([]);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
+  const [isUrgent, setIsUrgent] = useState(false);
   const [dueDate, setDueDate] = useState<Date | null>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -81,6 +82,7 @@ export default function CreateTodoScreen() {
         notifyOnOverdue,
         dueDate,
         recurrence,
+        priority: isUrgent ? 'urgent' : 'normal',
         createdBy: appUser!.uid,
       });
       setSubmitted(true);
@@ -165,6 +167,19 @@ export default function CreateTodoScreen() {
               }}
             />
           )}
+        </View>
+
+        <View style={styles.toggleRow}>
+          <View>
+            <Text style={styles.sectionLabel}>{t('todos.urgentLabel')}</Text>
+            <Text style={styles.sectionHint}>{t('todos.urgentHint')}</Text>
+          </View>
+          <Switch
+            value={isUrgent}
+            onValueChange={setIsUrgent}
+            trackColor={{ false: c.border, true: c.warning }}
+            thumbColor={c.white}
+          />
         </View>
 
         <View>
@@ -270,5 +285,9 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   memberCheckActive: { backgroundColor: c.primary },
   memberCheckMark: { color: c.white, fontSize: 13, fontWeight: '700' },
   memberName: { fontSize: 15, color: c.text },
+  toggleRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+  },
   error: { color: c.danger, fontSize: 14 },
 });

@@ -117,6 +117,13 @@ export default function TodoDetailScreen() {
         />
 
         <View style={styles.actions}>
+          {todo.status === 'pending' && (
+            <Button
+              label={todo.priority === 'urgent' ? t('todos.unmarkUrgent') : t('todos.markUrgent')}
+              onPress={() => updateTodo(todo.id, { priority: todo.priority === 'urgent' ? 'normal' : 'urgent' })}
+              variant="secondary"
+            />
+          )}
           {todo.status === 'pending' ? (
             assignedTo.includes(uid ?? '') ? (
               <Button label={t('todos.markComplete')} onPress={() => uid && completeTodo(todo.id, uid)} />

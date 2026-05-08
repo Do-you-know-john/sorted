@@ -35,7 +35,7 @@ export const DARK_COLORS = {
   card: '#1F2937',
 } as const;
 
-export type Colors = typeof COLORS;
+export type Colors = Record<keyof typeof COLORS, string>;
 
 export const SPACING = {
   xs: 4,

@@ -33,6 +33,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     backgroundColor: c.primary,
   },
   statusStripOverdue: { backgroundColor: c.danger },
+  statusStripUrgent: { backgroundColor: c.warning },
   statusStripDone: { backgroundColor: c.success },
   completed: { opacity: 0.5 },
   checkbox: { justifyContent: 'center', alignItems: 'center' },
@@ -78,6 +79,7 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
   const dateLocale = i18n.language === 'de' ? de : enUS;
   const isOverdue = todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending';
   const isCompleted = todo.status === 'completed';
+  const isUrgent = todo.priority === 'urgent' && !isCompleted;
   const justCompleted = isJustCompleted(todo);
   const isAssignedToMe = !!uid && todo.assignedTo.includes(uid);
   const c = useTheme();
@@ -107,12 +109,12 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
       onPress={() => router.push(`/(app)/todos/${todo.id}`)}
       activeOpacity={0.7}
     >
-      <View style={[styles.statusStrip, isOverdue && styles.statusStripOverdue, isCompleted && styles.statusStripDone]} />
+      <View style={[styles.statusStrip, isUrgent && !isOverdue && styles.statusStripUrgent, isOverdue && styles.statusStripOverdue, isCompleted && styles.statusStripDone]} />
       <AssigneeAvatars assignedTo={todo.assignedTo} />
 
       <View style={styles.content}>
         <Text style={[styles.title, isCompleted && styles.titleDone]} numberOfLines={1}>
-          {todo.title}
+          {isUrgent && !isOverdue && '🚩 '}{todo.title}
         </Text>
         {householdName && (
           <Text style={styles.householdLabel}>

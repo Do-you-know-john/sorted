@@ -33,6 +33,7 @@ export interface RecurrenceRule {
 }
 
 export type TodoStatus = 'pending' | 'completed';
+export type TodoPriority = 'normal' | 'urgent';
 
 export interface Todo {
   id: string;
@@ -46,6 +47,7 @@ export interface Todo {
   notifyOnOverdue: string[]; // user uids
   dueDate: Timestamp | null;
   status: TodoStatus;
+  priority?: TodoPriority;
   completedAt: Timestamp | null;
   completedBy: string | null;
   createdAt: Timestamp;

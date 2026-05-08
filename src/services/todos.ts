@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Todo, RecurrenceRule } from '../types';
+import { Todo, RecurrenceRule, TodoPriority } from '../types';
 
 function getNextDueDate(rule: RecurrenceRule, from: Date): Date {
   const next = new Date(from);
@@ -58,14 +58,16 @@ export type CreateTodoInput = {
   dueDate: Date | null;
   createdBy: string;
   recurrence?: RecurrenceRule | null;
+  priority?: TodoPriority;
 };
 
 export async function createTodo(input: CreateTodoInput): Promise<string> {
-  const { description, dueDate, recurrence, ...rest } = input;
+  const { description, dueDate, recurrence, priority, ...rest } = input;
   const ref = await addDoc(collection(db, 'todos'), {
     ...rest,
     ...(description ? { description } : {}),
     ...(recurrence ? { recurrence } : {}),
+    ...(priority && priority !== 'normal' ? { priority } : {}),
     dueDate: dueDate ? Timestamp.fromDate(dueDate) : null,
     status: 'pending',
     completedAt: null,
