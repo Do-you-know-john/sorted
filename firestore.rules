@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own profile
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Household members can read their household; only admins can update metadata
+    match /households/{householdId} {
+      function isMember() {
+        return request.auth != null &&
+          request.auth.uid in resource.data.members;
+      }
+      function isAdmin() {
+        return isMember() &&
+          resource.data.members[request.auth.uid].role == 'admin';
+      }
+
+      allow read: if isMember();
+      // Allow joining (adding self to members map) or admin updates
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        // Joining: only adding own uid to members, nothing else changes
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
+          request.resource.data.members.keys().hasOnly(resource.data.members.keys().concat([request.auth.uid]))
+        )
+      );
+      allow create: if request.auth != null;
+      allow delete: if isAdmin();
+    }
+
+    // Todos are readable/writable by household members who can see them
+    match /todos/{todoId} {
+      function isHouseholdMember(householdId) {
+        return request.auth != null &&
+          exists(/databases/$(database)/documents/households/$(householdId)) &&
+          request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+      }
+
+      allow read: if request.auth != null &&
+        isHouseholdMember(resource.data.householdId) &&
+        (resource.data.visibleTo.size() == 0 || request.auth.uid in resource.data.visibleTo);
+
+      allow create: if request.auth != null &&
+        isHouseholdMember(request.resource.data.householdId);
+
+      allow update, delete: if request.auth != null &&
+        isHouseholdMember(resource.data.householdId);
+    }
+  }
+}
