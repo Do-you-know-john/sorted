@@ -28,7 +28,7 @@ export default function RootLayout() {
       router.replace('/(auth)/login');
     } else if (firebaseUser && inAuth) {
       if (hasHousehold) {
-        router.replace('/(app)/(home)');
+        router.replace('/(app)/(tabs)/(home)');
       } else if (appUser) {
         // appUser loaded and confirmed no households
         router.replace('/(app)/household/setup');

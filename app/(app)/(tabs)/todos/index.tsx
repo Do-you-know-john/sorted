@@ -3,13 +3,13 @@ import { View, Text, SectionList, TouchableOpacity, StyleSheet, ActivityIndicato
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../../src/stores/authStore';
-import { useHouseholdStore } from '../../../src/stores/householdStore';
-import { useTodos, useGroupedTodos, isJustCompleted } from '../../../src/hooks/useTodos';
-import { TodoCard } from '../../../src/components/TodoCard';
-import { AvatarButton } from '../../../src/components/AvatarButton';
-import { HouseholdSwitcher } from '../../../src/components/HouseholdSwitcher';
-import { COLORS, SPACING } from '../../../src/constants';
+import { useAuthStore } from '../../../../src/stores/authStore';
+import { useHouseholdStore } from '../../../../src/stores/householdStore';
+import { useTodos, useGroupedTodos, isJustCompleted } from '../../../../src/hooks/useTodos';
+import { TodoCard } from '../../../../src/components/TodoCard';
+import { AvatarButton } from '../../../../src/components/AvatarButton';
+import { HouseholdSwitcher } from '../../../../src/components/HouseholdSwitcher';
+import { COLORS, SPACING } from '../../../../src/constants';
 
 export default function TodosScreen() {
   const router = useRouter();
@@ -22,7 +22,6 @@ export default function TodosScreen() {
   const [showAllCompleted, setShowAllCompleted] = useState(false);
   const [onlyMine, setOnlyMine] = useState(false);
 
-  // By default: all pending + "just completed" (<24h). showAllCompleted reveals older ones.
   const grouped = useGroupedTodos(todos, { showAllCompleted, onlyMine, uid });
   const members = household ? Object.values(household.members) : [];
 

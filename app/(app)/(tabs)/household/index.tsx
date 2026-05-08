@@ -6,17 +6,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../../src/stores/authStore';
-import { useHouseholdStore } from '../../../src/stores/householdStore';
-import { refreshInviteCode, getTodoCount, deleteHousehold, updateHouseholdAvatar } from '../../../src/services/households';
-import { HOUSEHOLD_AVATARS, emojiForHouseholdAvatar } from '../../../src/constants/avatars';
-import { HouseholdSwitcher } from '../../../src/components/HouseholdSwitcher';
-import { logout } from '../../../src/services/auth';
-import { Button } from '../../../src/components/ui/Button';
-import { COLORS, SPACING } from '../../../src/constants';
+import { useAuthStore } from '../../../../src/stores/authStore';
+import { useHouseholdStore } from '../../../../src/stores/householdStore';
+import { refreshInviteCode, getTodoCount, deleteHousehold, updateHouseholdAvatar } from '../../../../src/services/households';
+import { HOUSEHOLD_AVATARS, emojiForHouseholdAvatar } from '../../../../src/constants/avatars';
+import { HouseholdSwitcher } from '../../../../src/components/HouseholdSwitcher';
+import { logout } from '../../../../src/services/auth';
+import { Button } from '../../../../src/components/ui/Button';
+import { COLORS, SPACING } from '../../../../src/constants';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
-import i18n from '../../../src/i18n';
+import i18n from '../../../../src/i18n';
 
 export default function HouseholdScreen() {
   const { t } = useTranslation();
@@ -103,7 +103,7 @@ export default function HouseholdScreen() {
       setDeleteModalVisible(false);
       const nextId = remainingIds.find((id) => id !== household.id);
       if (nextId) {
-        router.replace('/(app)/(home)');
+        router.replace('/(app)/(tabs)/(home)');
       } else {
         router.replace('/(app)/household/setup');
       }

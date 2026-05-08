@@ -6,16 +6,16 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useAuthStore } from '../../../src/stores/authStore';
-import { useAllHouseholds } from '../../../src/hooks/useAllHouseholds';
-import { useTodos, useAllTodos, isJustCompleted } from '../../../src/hooks/useTodos';
-import { TodoCard } from '../../../src/components/TodoCard';
-import { AvatarButton } from '../../../src/components/AvatarButton';
-import { COLORS, SPACING } from '../../../src/constants';
-import { Household } from '../../../src/types';
-import { db } from '../../../src/services/firebase';
+import { useAuthStore } from '../../../../src/stores/authStore';
+import { useAllHouseholds } from '../../../../src/hooks/useAllHouseholds';
+import { useTodos, useAllTodos, isJustCompleted } from '../../../../src/hooks/useTodos';
+import { TodoCard } from '../../../../src/components/TodoCard';
+import { AvatarButton } from '../../../../src/components/AvatarButton';
+import { COLORS, SPACING } from '../../../../src/constants';
+import { Household } from '../../../../src/types';
+import { db } from '../../../../src/services/firebase';
 import { isPast } from 'date-fns';
-import { emojiForHouseholdAvatar } from '../../../src/constants/avatars';
+import { emojiForHouseholdAvatar } from '../../../../src/constants/avatars';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -157,7 +157,6 @@ function HouseholdCard({
   const { t } = useTranslation();
   const now = new Date();
 
-  // Count only todos visible to this user
   const visibleTodos = todos.filter(
     (todo) => todo.householdId === household.id &&
       todo.status === 'pending' &&
@@ -166,11 +165,6 @@ function HouseholdCard({
   const overdueCount = visibleTodos.filter(
     (todo) => todo.dueDate && isPast(todo.dueDate.toDate())
   ).length;
-  const dueTodayCount = visibleTodos.filter((todo) => {
-    if (!todo.dueDate) return false;
-    const d = todo.dueDate.toDate();
-    return d <= now && !isPast(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
-  }).length;
 
   const memberCount = Object.keys(household.members).length;
 
