@@ -98,7 +98,13 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noTodos')}</Text>
           </View>
         ) : (
-          upcomingTodos.map((todo) => <TodoCard key={todo.id} todo={todo} />)
+          upcomingTodos.map((todo) => (
+            <TodoCard
+              key={todo.id}
+              todo={todo}
+              householdName={households.find((h) => h.id === todo.householdId)?.name}
+            />
+          ))
         )}
 
         {/* Recently completed */}
@@ -110,7 +116,13 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noRecentlyCompleted')}</Text>
           </View>
         ) : (
-          recentlyCompletedTodos.map((todo) => <TodoCard key={todo.id} todo={todo} />)
+          recentlyCompletedTodos.map((todo) => (
+            <TodoCard
+              key={todo.id}
+              todo={todo}
+              householdName={households.find((h) => h.id === todo.householdId)?.name}
+            />
+          ))
         )}
 
         <TouchableOpacity

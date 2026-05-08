@@ -15,9 +15,10 @@ import i18n from '../i18n';
 
 interface Props {
   todo: Todo;
+  householdName?: string;
 }
 
-export function TodoCard({ todo }: Props) {
+export function TodoCard({ todo, householdName }: Props) {
   const router = useRouter();
   const { t } = useTranslation();
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
@@ -58,6 +59,9 @@ export function TodoCard({ todo }: Props) {
         <Text style={[styles.title, isCompleted && styles.titleDone]} numberOfLines={1}>
           {todo.title}
         </Text>
+        {householdName && (
+          <Text style={styles.householdLabel}>🏠 {householdName}</Text>
+        )}
         {justCompleted && !isOverdue && (
           <Text style={styles.justCompletedLabel}>{t('todos.justCompleted')}</Text>
         )}
@@ -143,6 +147,7 @@ const styles = StyleSheet.create({
   titleDone: { textDecorationLine: 'line-through', color: COLORS.textSecondary },
   due: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   dueOverdue: { color: COLORS.danger, fontWeight: '500' },
+  householdLabel: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
   justCompletedLabel: { fontSize: 12, color: COLORS.success, marginTop: 2, fontWeight: '500' },
 });
 
