@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { format, isPast } from 'date-fns';
@@ -26,12 +26,19 @@ export function TodoCard({ todo }: Props) {
   const isCompleted = todo.status === 'completed';
   const justCompleted = isJustCompleted(todo);
 
-  async function handleToggle() {
+  function handleToggle() {
     if (!uid) return;
     if (isCompleted) {
-      await reopenTodo(todo.id);
+      reopenTodo(todo.id);
     } else {
-      await completeTodo(todo.id, uid);
+      Alert.alert(
+        t('todos.completeConfirmTitle'),
+        t('todos.completeConfirmMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('todos.markComplete'), style: 'default', onPress: () => completeTodo(todo.id, uid) },
+        ],
+      );
     }
   }
 

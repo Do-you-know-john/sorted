@@ -145,6 +145,8 @@ export default {
     createdBy: 'Created by',
     assignedTo: 'Assigned to',
     markComplete: 'Mark as complete',
+    completeConfirmTitle: 'Mark as complete?',
+    completeConfirmMessage: 'Are you sure this to-do is done?',
     reopen: 'Reopen',
     deleteTitle: 'Delete To-Do',
     deleteMessage: 'Are you sure you want to delete this to-do?',
