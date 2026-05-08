@@ -56,6 +56,7 @@ export default {
     removePhoto: 'Foto entfernen',
     avatarSaved: 'Profilbild aktualisiert.',
     avatarFailed: 'Profilbild konnte nicht aktualisiert werden.',
+    avatarUpgradePlan: 'Für den Foto-Upload ist ein kostenpflichtiger Firebase-Plan erforderlich. Bitte wähle stattdessen einen der Avatare.',
     avatarColor: 'Hintergrundfarbe',
   },
   household: {

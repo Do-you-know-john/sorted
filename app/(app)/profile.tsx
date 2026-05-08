@@ -106,8 +106,9 @@ export default function ProfileScreen() {
       const url = await pickAndUploadAvatarPhoto(appUser.householdIds);
       if (url) setAvatarSuccess(true);
     } catch (e: any) {
-      console.error('[Avatar upload]', e?.code, e?.message, e);
-      setAvatarError(e?.message ?? t('profile.avatarFailed'));
+      setAvatarError(e?.code === 'storage/unknown'
+        ? t('profile.avatarUpgradePlan')
+        : t('profile.avatarFailed'));
     } finally {
       setAvatarLoading(false);
     }
