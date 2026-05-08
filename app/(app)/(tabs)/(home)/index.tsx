@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
@@ -56,6 +56,9 @@ export default function HomeScreen() {
     await updateDoc(doc(db, 'users', appUser.uid), { activeHouseholdId: householdId });
   }
 
+  const [upcomingOpen, setUpcomingOpen] = useState(true);
+  const [recentOpen, setRecentOpen] = useState(false);
+
   if (!appUser) return null;
 
   return (
@@ -90,8 +93,11 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* Upcoming todos */}
-        <Text style={styles.sectionTitle}>{t('home.upcomingTodos')}</Text>
-        {allLoading ? (
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => setUpcomingOpen((v) => !v)} activeOpacity={0.7}>
+          <Text style={styles.sectionTitle}>{t('home.upcomingTodos')}</Text>
+          <Text style={styles.chevron}>{upcomingOpen ? '▾' : '▸'}</Text>
+        </TouchableOpacity>
+        {upcomingOpen && (allLoading ? (
           <ActivityIndicator color={COLORS.primary} />
         ) : upcomingTodos.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -109,11 +115,14 @@ export default function HomeScreen() {
               />
             );
           })
-        )}
+        ))}
 
         {/* Recently completed */}
-        <Text style={styles.sectionTitle}>{t('home.recentlyCompleted')}</Text>
-        {allLoading ? (
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => setRecentOpen((v) => !v)} activeOpacity={0.7}>
+          <Text style={styles.sectionTitle}>{t('home.recentlyCompleted')}</Text>
+          <Text style={styles.chevron}>{recentOpen ? '▾' : '▸'}</Text>
+        </TouchableOpacity>
+        {recentOpen && (allLoading ? (
           <ActivityIndicator color={COLORS.primary} />
         ) : recentlyCompletedTodos.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -131,7 +140,7 @@ export default function HomeScreen() {
               />
             );
           })
-        )}
+        ))}
 
         <TouchableOpacity
           style={styles.addTodoBtn}
@@ -204,10 +213,14 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
+  sectionHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
   sectionTitle: {
     fontSize: 13, fontWeight: '700', color: COLORS.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
+  chevron: { fontSize: 14, color: COLORS.textSecondary },
   householdsRow: { marginHorizontal: -SPACING.md, paddingHorizontal: SPACING.md },
   householdCard: {
     width: 160, marginRight: SPACING.sm, padding: SPACING.md,
