@@ -94,6 +94,9 @@ export default {
     deleteConfirmPlaceholder: 'Haushaltsname',
     deleteBtn: 'Endgültig löschen',
     deleteFailed: 'Haushalt konnte nicht gelöscht werden.',
+    avatar: 'Haushalt-Avatar',
+    avatarSaved: 'Avatar aktualisiert.',
+    avatarFailed: 'Avatar konnte nicht aktualisiert werden.',
   },
   home: {
     greeting: 'Hallo, {{name}}!',

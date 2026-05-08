@@ -98,13 +98,17 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noTodos')}</Text>
           </View>
         ) : (
-          upcomingTodos.map((todo) => (
-            <TodoCard
-              key={todo.id}
-              todo={todo}
-              householdName={households.find((h) => h.id === todo.householdId)?.name}
-            />
-          ))
+          upcomingTodos.map((todo) => {
+            const h = households.find((hh) => hh.id === todo.householdId);
+            return (
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                householdName={h?.name}
+                householdAvatarId={h?.avatarId}
+              />
+            );
+          })
         )}
 
         {/* Recently completed */}
@@ -116,13 +120,17 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noRecentlyCompleted')}</Text>
           </View>
         ) : (
-          recentlyCompletedTodos.map((todo) => (
-            <TodoCard
-              key={todo.id}
-              todo={todo}
-              householdName={households.find((h) => h.id === todo.householdId)?.name}
-            />
-          ))
+          recentlyCompletedTodos.map((todo) => {
+            const h = households.find((hh) => hh.id === todo.householdId);
+            return (
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                householdName={h?.name}
+                householdAvatarId={h?.avatarId}
+              />
+            );
+          })
         )}
 
         <TouchableOpacity

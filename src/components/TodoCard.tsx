@@ -11,14 +11,16 @@ import { useAuthStore } from '../stores/authStore';
 import { useHouseholdStore } from '../stores/householdStore';
 import { isJustCompleted } from '../hooks/useTodos';
 import { Avatar } from './Avatar';
+import { emojiForHouseholdAvatar } from '../constants/avatars';
 import i18n from '../i18n';
 
 interface Props {
   todo: Todo;
   householdName?: string;
+  householdAvatarId?: string | null;
 }
 
-export function TodoCard({ todo, householdName }: Props) {
+export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
   const router = useRouter();
   const { t } = useTranslation();
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
@@ -60,7 +62,9 @@ export function TodoCard({ todo, householdName }: Props) {
           {todo.title}
         </Text>
         {householdName && (
-          <Text style={styles.householdLabel}>🏠 {householdName}</Text>
+          <Text style={styles.householdLabel}>
+            {emojiForHouseholdAvatar(householdAvatarId)} {householdName}
+          </Text>
         )}
         {justCompleted && !isOverdue && (
           <Text style={styles.justCompletedLabel}>{t('todos.justCompleted')}</Text>

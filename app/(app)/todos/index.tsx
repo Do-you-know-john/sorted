@@ -69,7 +69,13 @@ export default function TodosScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TodoCard todo={item} householdName={household?.name} />}
+          renderItem={({ item }) => (
+            <TodoCard
+              todo={item}
+              householdName={household?.name}
+              householdAvatarId={household?.avatarId}
+            />
+          )}
           renderSectionHeader={({ section: { title } }) => (
             <Text style={styles.sectionHeader}>{title}</Text>
           )}

@@ -18,6 +18,28 @@ export function bgForColor(id: string | null | undefined): string | null {
   return AVATAR_COLORS.find((c) => c.id === id)?.bg ?? null;
 }
 
+export const HOUSEHOLD_AVATARS = [
+  { id: 'house',     emoji: '🏠' },
+  { id: 'garden',    emoji: '🏡' },
+  { id: 'building',  emoji: '🏢' },
+  { id: 'castle',    emoji: '🏰' },
+  { id: 'hut',       emoji: '🛖' },
+  { id: 'tent',      emoji: '⛺' },
+  { id: 'tree',      emoji: '🌳' },
+  { id: 'sunflower', emoji: '🌻' },
+  { id: 'wave',      emoji: '🌊' },
+  { id: 'mountain',  emoji: '🏔️' },
+  { id: 'island',    emoji: '🏝️' },
+  { id: 'rainbow',   emoji: '🌈' },
+] as const;
+
+export type HouseholdAvatarId = (typeof HOUSEHOLD_AVATARS)[number]['id'];
+
+export function emojiForHouseholdAvatar(id: string | null | undefined): string {
+  if (!id) return '🏠';
+  return HOUSEHOLD_AVATARS.find((a) => a.id === id)?.emoji ?? '🏠';
+}
+
 export const PRESET_AVATARS = [
   { id: 'bear',      emoji: '🐻' },
   { id: 'fox',       emoji: '🦊' },

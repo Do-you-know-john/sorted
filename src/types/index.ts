@@ -21,6 +21,7 @@ export interface Household {
   inviteCode: string;
   inviteCodeExpiresAt: Timestamp;
   createdAt: Timestamp;
+  avatarId?: string | null;
 }
 
 export type TodoStatus = 'pending' | 'completed';

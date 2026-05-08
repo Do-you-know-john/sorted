@@ -97,6 +97,10 @@ export async function getHousehold(householdId: string): Promise<Household | nul
   return { id: snap.id, ...snap.data() } as Household;
 }
 
+export async function updateHouseholdAvatar(householdId: string, avatarId: string): Promise<void> {
+  await updateDoc(doc(db, 'households', householdId), { avatarId });
+}
+
 export async function getTodoCount(householdId: string): Promise<number> {
   const snap = await getDocs(
     query(collection(db, 'todos'), where('householdId', '==', householdId))
