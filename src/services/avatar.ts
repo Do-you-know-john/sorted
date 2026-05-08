@@ -34,8 +34,16 @@ export async function pickAndUploadAvatarPhoto(householdIds: string[]): Promise<
 
   if (result.canceled || !result.assets[0]) return null;
 
-  const response = await fetch(result.assets[0].uri);
-  const blob = await response.blob();
+  // XMLHttpRequest is required on iOS — fetch() on local file:// URIs is unreliable in RN
+  const blob: Blob = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Failed to read image file.'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', result.assets[0].uri, true);
+    xhr.send(null);
+  });
+
   const storageRef = ref(storage, `avatars/${user.uid}`);
   await uploadBytes(storageRef, blob);
   const photoURL = await getDownloadURL(storageRef);
