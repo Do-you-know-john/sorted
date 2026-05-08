@@ -56,6 +56,7 @@ export default {
     removePhoto: 'Remove photo',
     avatarSaved: 'Profile picture updated.',
     avatarFailed: 'Failed to update profile picture.',
+    avatarColor: 'Background color',
   },
   household: {
     setup: 'Set up your household to get started.',

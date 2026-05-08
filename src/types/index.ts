@@ -10,6 +10,7 @@ export interface HouseholdMember {
   joinedAt: Timestamp;
   avatarId?: string | null;
   photoURL?: string | null;
+  avatarColor?: string | null;
 }
 
 export interface Household {
@@ -51,4 +52,5 @@ export interface AppUser {
   createdAt: Timestamp;
   avatarId?: string | null;
   photoURL?: string | null;
+  avatarColor?: string | null;
 }

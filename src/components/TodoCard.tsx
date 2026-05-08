@@ -90,6 +90,7 @@ function AssigneeAvatars({ assignedTo }: { assignedTo: string[] }) {
         const name = member?.displayName ?? (isSelf ? appUser?.displayName : null);
         const avatarId = isSelf ? appUser?.avatarId : member?.avatarId;
         const photoURL = isSelf ? appUser?.photoURL : member?.photoURL;
+        const avatarColor = isSelf ? appUser?.avatarColor : member?.avatarColor;
         return (
           <View
             key={memberId}
@@ -98,6 +99,7 @@ function AssigneeAvatars({ assignedTo }: { assignedTo: string[] }) {
             <Avatar
               avatarId={avatarId}
               photoURL={photoURL}
+              avatarColor={avatarColor}
               name={name}
               size={28}
               selfHighlight={isSelf}

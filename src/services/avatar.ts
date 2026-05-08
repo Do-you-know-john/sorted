@@ -53,6 +53,20 @@ export async function pickAndUploadAvatarPhoto(householdIds: string[]): Promise<
   return photoURL;
 }
 
+export async function updateAvatarColor(colorId: string, householdIds: string[]): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not logged in.');
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'users', user.uid), { avatarColor: colorId });
+  for (const hId of householdIds) {
+    batch.update(doc(db, 'households', hId), {
+      [`members.${user.uid}.avatarColor`]: colorId,
+    });
+  }
+  await batch.commit();
+}
+
 export async function removeAvatar(householdIds: string[]): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('Not logged in.');

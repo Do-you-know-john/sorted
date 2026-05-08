@@ -16,6 +16,7 @@ export function AvatarButton() {
       <Avatar
         avatarId={appUser?.avatarId}
         photoURL={appUser?.photoURL}
+        avatarColor={appUser?.avatarColor}
         name={appUser?.displayName ?? appUser?.email}
         size={34}
         selfHighlight

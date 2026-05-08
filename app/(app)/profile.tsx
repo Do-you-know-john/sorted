@@ -5,12 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
 import { updateDisplayName, changePassword } from '../../src/services/profile';
-import { updatePresetAvatar, pickAndUploadAvatarPhoto, removeAvatar } from '../../src/services/avatar';
+import { updatePresetAvatar, pickAndUploadAvatarPhoto, removeAvatar, updateAvatarColor } from '../../src/services/avatar';
 import { logout } from '../../src/services/auth';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
 import { Avatar } from '../../src/components/Avatar';
-import { PRESET_AVATARS } from '../../src/constants/avatars';
+import { PRESET_AVATARS, AVATAR_COLORS } from '../../src/constants/avatars';
 import { COLORS, SPACING } from '../../src/constants';
 import i18n from '../../src/i18n';
 
@@ -82,6 +82,21 @@ export default function ProfileScreen() {
     }
   }
 
+  async function handleSelectColor(colorId: string) {
+    if (!appUser) return;
+    setAvatarError('');
+    setAvatarSuccess(false);
+    setAvatarLoading(true);
+    try {
+      await updateAvatarColor(colorId, appUser.householdIds);
+      setAvatarSuccess(true);
+    } catch {
+      setAvatarError(t('profile.avatarFailed'));
+    } finally {
+      setAvatarLoading(false);
+    }
+  }
+
   async function handleUploadPhoto() {
     if (!appUser) return;
     setAvatarError('');
@@ -139,6 +154,7 @@ export default function ProfileScreen() {
           <Avatar
             avatarId={appUser?.avatarId}
             photoURL={appUser?.photoURL}
+            avatarColor={appUser?.avatarColor}
             name={appUser?.displayName ?? appUser?.email}
             size={72}
             selfHighlight
@@ -167,6 +183,25 @@ export default function ProfileScreen() {
               );
             })}
           </View>
+          {!appUser?.photoURL && (
+            <View>
+              <Text style={styles.colorLabel}>{t('profile.avatarColor')}</Text>
+              <View style={styles.colorRow}>
+                {AVATAR_COLORS.map((c) => {
+                  const isActive = (appUser?.avatarColor ?? 'indigo') === c.id;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.colorSwatch, { backgroundColor: c.bg }, isActive && styles.colorSwatchActive]}
+                      onPress={() => handleSelectColor(c.id)}
+                      disabled={avatarLoading}
+                    />
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
           <TouchableOpacity
             style={styles.uploadBtn}
             onPress={handleUploadPhoto}
@@ -280,6 +315,15 @@ const styles = StyleSheet.create({
   },
   emojiBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
   emojiText: { fontSize: 26 },
+  colorLabel: {
+    fontSize: 12, color: COLORS.textSecondary, marginBottom: SPACING.xs,
+  },
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  colorSwatch: {
+    width: 32, height: 32, borderRadius: 16,
+    borderWidth: 2, borderColor: 'transparent',
+  },
+  colorSwatchActive: { borderColor: COLORS.white, elevation: 3, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4 },
   uploadBtn: {
     borderWidth: 1, borderColor: COLORS.primary, borderRadius: 10,
     paddingVertical: SPACING.sm, alignItems: 'center',

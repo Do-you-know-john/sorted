@@ -1,19 +1,23 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { emojiForAvatar } from '../constants/avatars';
+import { emojiForAvatar, bgForColor } from '../constants/avatars';
 import { COLORS } from '../constants';
 
 interface AvatarProps {
   avatarId?: string | null;
   photoURL?: string | null;
+  avatarColor?: string | null;
   name?: string | null;
   size?: number;
   selfHighlight?: boolean;
 }
 
-export function Avatar({ avatarId, photoURL, name, size = 34, selfHighlight = false }: AvatarProps) {
+export function Avatar({
+  avatarId, photoURL, avatarColor, name, size = 34, selfHighlight = false,
+}: AvatarProps) {
   const radius = size / 2;
   const emoji = emojiForAvatar(avatarId);
+  const customBg = bgForColor(avatarColor);
 
   if (photoURL) {
     return (
@@ -30,7 +34,9 @@ export function Avatar({ avatarId, photoURL, name, size = 34, selfHighlight = fa
     );
   }
 
-  const bg = selfHighlight ? COLORS.primary : COLORS.primaryLight;
+  // Custom color overrides the indigo default; selfHighlight acts as fallback when no custom color
+  const bg = customBg ?? (selfHighlight ? COLORS.primary : COLORS.primaryLight);
+  const hasColor = !!customBg || selfHighlight;
   const initial = (name ?? '?')[0].toUpperCase();
 
   return (
@@ -38,7 +44,7 @@ export function Avatar({ avatarId, photoURL, name, size = 34, selfHighlight = fa
       {emoji ? (
         <Text style={{ fontSize: size * 0.52, lineHeight: size * 0.7 }}>{emoji}</Text>
       ) : (
-        <Text style={[styles.initial, { fontSize: size * 0.42, color: selfHighlight ? COLORS.white : COLORS.primary }]}>
+        <Text style={[styles.initial, { fontSize: size * 0.42, color: hasColor ? COLORS.white : COLORS.primary }]}>
           {initial}
         </Text>
       )}
