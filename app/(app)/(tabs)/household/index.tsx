@@ -9,7 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../../src/stores/householdStore';
 import { refreshInviteCode, getTodoCount, deleteHousehold, updateHouseholdAvatar } from '../../../../src/services/households';
-import { HOUSEHOLD_AVATARS, emojiForHouseholdAvatar } from '../../../../src/constants/avatars';
+import { HOUSEHOLD_AVATARS } from '../../../../src/constants/avatars';
+import { HouseholdIcon } from '../../../../src/components/HouseholdIcon';
 import { HouseholdSwitcher } from '../../../../src/components/HouseholdSwitcher';
 import { logout } from '../../../../src/services/auth';
 import { Button } from '../../../../src/components/ui/Button';
@@ -139,7 +140,7 @@ export default function HouseholdScreen() {
                   onPress={() => handleSelectAvatar(a.id)}
                   disabled={avatarLoading}
                 >
-                  <Text style={styles.emojiText}>{a.emoji}</Text>
+                  <HouseholdIcon avatarId={a.id} size={38} />
                 </TouchableOpacity>
               );
             })}
@@ -245,13 +246,10 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   emojiBtn: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: c.background,
-    borderWidth: 2, borderColor: c.border,
-    justifyContent: 'center', alignItems: 'center',
+    borderRadius: 16, borderWidth: 2, borderColor: 'transparent',
+    padding: 3,
   },
-  emojiBtnActive: { borderColor: c.primary, backgroundColor: c.primaryLight },
-  emojiText: { fontSize: 26 },
+  emojiBtnActive: { borderColor: c.primary },
   card: {
     backgroundColor: c.card,
     borderRadius: 14,

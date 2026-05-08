@@ -16,7 +16,7 @@ import { useTheme } from '../../../../src/hooks/useTheme';
 import { Household } from '../../../../src/types';
 import { db } from '../../../../src/services/firebase';
 import { isPast } from 'date-fns';
-import { emojiForHouseholdAvatar } from '../../../../src/constants/avatars';
+import { HouseholdIcon } from '../../../../src/components/HouseholdIcon';
 
 const makeStyles = (c: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
@@ -41,7 +41,6 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     borderWidth: 1, borderColor: c.border, gap: SPACING.xs,
   },
   householdCardActive: { backgroundColor: c.primary, borderColor: c.primary },
-  householdCardEmoji: { fontSize: 34 },
   householdCardName: { fontSize: 15, fontWeight: '700', color: c.text },
   householdCardNameActive: { color: c.white },
   householdCardMembers: { fontSize: 12, color: c.textSecondary },
@@ -248,9 +247,7 @@ function HouseholdCard({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={styles.householdCardEmoji}>
-        {emojiForHouseholdAvatar(household.avatarId)}
-      </Text>
+      <HouseholdIcon avatarId={household.avatarId} size={44} />
       <Text style={[styles.householdCardName, active && styles.householdCardNameActive]} numberOfLines={1}>
         {household.name}
       </Text>

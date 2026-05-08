@@ -12,7 +12,7 @@ import { useHouseholdStore } from '../stores/householdStore';
 import { isJustCompleted } from '../hooks/useTodos';
 import { useTheme } from '../hooks/useTheme';
 import { Avatar } from './Avatar';
-import { emojiForHouseholdAvatar } from '../constants/avatars';
+import { HouseholdIcon } from './HouseholdIcon';
 import i18n from '../i18n';
 
 interface Props {
@@ -50,7 +50,8 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   titleDone: { textDecorationLine: 'line-through', color: c.textSecondary },
   due: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   dueOverdue: { color: c.danger, fontWeight: '600' },
-  householdLabel: { fontSize: 11, color: c.textSecondary, marginTop: 2 },
+  householdLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  householdLabel: { fontSize: 11, color: c.textSecondary },
   justCompletedLabel: { fontSize: 12, color: c.success, marginTop: 2, fontWeight: '600' },
 });
 
@@ -118,9 +119,10 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
           {isUrgent && '🚩 '}{todo.title}
         </Text>
         {householdName && (
-          <Text style={styles.householdLabel}>
-            {emojiForHouseholdAvatar(householdAvatarId)} {householdName}
-          </Text>
+          <View style={styles.householdLabelRow}>
+            <HouseholdIcon avatarId={householdAvatarId} size={14} />
+            <Text style={styles.householdLabel}>{householdName}</Text>
+          </View>
         )}
         {justCompleted && !isOverdue && (
           <Text style={styles.justCompletedLabel}>{t('todos.justCompleted')}</Text>

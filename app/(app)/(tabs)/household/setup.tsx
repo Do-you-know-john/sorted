@@ -11,6 +11,7 @@ import { Colors, SPACING } from '../../../../src/constants';
 import { useTheme } from '../../../../src/hooks/useTheme';
 import { useDiscardGuard } from '../../../../src/hooks/useDiscardGuard';
 import { HOUSEHOLD_AVATARS } from '../../../../src/constants/avatars';
+import { HouseholdIcon } from '../../../../src/components/HouseholdIcon';
 
 export default function HouseholdSetupScreen() {
   const router = useRouter();
@@ -98,7 +99,7 @@ export default function HouseholdSetupScreen() {
                       style={[styles.emojiBtn, selectedAvatarId === a.id && styles.emojiBtnActive]}
                       onPress={() => setSelectedAvatarId(a.id)}
                     >
-                      <Text style={styles.emojiText}>{a.emoji}</Text>
+                      <HouseholdIcon avatarId={a.id} size={36} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -164,12 +165,9 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   avatarLabel: { fontSize: 13, fontWeight: '600', color: c.text, marginBottom: SPACING.xs },
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   emojiBtn: {
-    width: 48, height: 48, borderRadius: 12,
-    backgroundColor: c.card,
-    borderWidth: 2, borderColor: c.border,
-    justifyContent: 'center', alignItems: 'center',
+    borderRadius: 14, borderWidth: 2, borderColor: 'transparent',
+    padding: 3,
   },
-  emojiBtnActive: { borderColor: c.primary, backgroundColor: c.primaryLight },
-  emojiText: { fontSize: 24 },
+  emojiBtnActive: { borderColor: c.primary },
   error: { color: c.danger, fontSize: 14 },
 });

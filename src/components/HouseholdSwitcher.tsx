@@ -6,7 +6,7 @@ import {
 import { doc, updateDoc } from 'firebase/firestore';
 import { useAuthStore } from '../stores/authStore';
 import { useAllHouseholds } from '../hooks/useAllHouseholds';
-import { emojiForHouseholdAvatar } from '../constants/avatars';
+import { HouseholdIcon } from './HouseholdIcon';
 import { db } from '../services/firebase';
 import { useTheme } from '../hooks/useTheme';
 import { Colors, SPACING } from '../constants';
@@ -24,8 +24,6 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     borderWidth: 1.5, borderColor: c.primary,
   },
   triggerLarge: { maxWidth: '100%' },
-  triggerEmoji: { fontSize: 18 },
-  triggerEmojiLarge: { fontSize: 28 },
   triggerName: { fontSize: 17, fontWeight: '700', color: c.text, flexShrink: 1 },
   triggerNameLarge: { fontSize: 24, fontWeight: '800' },
   chevron: { fontSize: 13, color: c.textSecondary, marginLeft: 2 },
@@ -48,7 +46,6 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: c.border,
   },
   itemActive: { backgroundColor: c.primaryLight },
-  itemEmoji: { fontSize: 22 },
   itemName: { flex: 1, fontSize: 16, fontWeight: '500', color: c.text },
   itemNameActive: { color: c.primary, fontWeight: '700' },
   check: { fontSize: 16, color: c.primary, fontWeight: '700' },
@@ -78,8 +75,6 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
 
   if (!current) return null;
 
-  const emoji = emojiForHouseholdAvatar(current.avatarId);
-
   return (
     <>
       <TouchableOpacity
@@ -88,9 +83,7 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
         activeOpacity={canSwitch ? 0.7 : 1}
         disabled={!canSwitch}
       >
-        <Text style={[styles.triggerEmoji, size === 'large' && styles.triggerEmojiLarge]}>
-          {emoji}
-        </Text>
+        <HouseholdIcon avatarId={current.avatarId} size={size === 'large' ? 36 : 24} />
         <Text
           style={[styles.triggerName, size === 'large' && styles.triggerNameLarge]}
           numberOfLines={1}
@@ -117,7 +110,7 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
                     onPress={() => handleSwitch(h.id)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.itemEmoji}>{emojiForHouseholdAvatar(h.avatarId)}</Text>
+                    <HouseholdIcon avatarId={h.avatarId} size={30} />
                     <Text style={[styles.itemName, isActive && styles.itemNameActive]} numberOfLines={1}>
                       {h.name}
                     </Text>
