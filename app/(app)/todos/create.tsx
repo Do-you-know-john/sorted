@@ -164,8 +164,8 @@ export default function CreateTodoScreen() {
         <AssigneePicker
           label={t('todos.assignTo')}
           members={members}
-          selected={assignedTo}
-          onChange={setAssignedTo}
+          selected={assignedTo[0] ?? null}
+          onChange={(uid) => setAssignedTo(uid ? [uid] : [])}
           currentUserUid={appUser?.uid}
         />
 

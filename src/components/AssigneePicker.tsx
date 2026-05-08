@@ -10,44 +10,29 @@ import { COLORS, SPACING } from '../constants';
 interface Props {
   label: string;
   members: HouseholdMember[];
-  selected: string[];
-  onChange: (uids: string[]) => void;
+  selected: string | null;
+  onChange: (uid: string | null) => void;
   currentUserUid?: string;
 }
 
 export function AssigneePicker({ label, members, selected, onChange, currentUserUid }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<string[]>([]);
 
-  function handleOpen() {
-    setDraft(selected);
-    setOpen(true);
-  }
-
-  function handleToggle(uid: string) {
-    setDraft((prev) =>
-      prev.includes(uid) ? prev.filter((u) => u !== uid) : [...prev, uid],
-    );
-  }
-
-  function handleConfirm() {
-    onChange(draft);
+  function handleSelect(uid: string | null) {
+    onChange(uid);
     setOpen(false);
   }
 
-  const triggerLabel = selected.length === 0
-    ? '—'
-    : selected
-        .map((uid) => members.find((m) => m.uid === uid)?.displayName ?? uid)
-        .join(', ');
+  const selectedMember = members.find((m) => m.uid === selected);
+  const triggerLabel = selectedMember?.displayName ?? '—';
 
   return (
     <View>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TouchableOpacity style={styles.trigger} onPress={handleOpen} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.trigger} onPress={() => setOpen(true)} activeOpacity={0.7}>
         <Text
-          style={[styles.triggerText, selected.length === 0 && styles.triggerEmpty]}
+          style={[styles.triggerText, !selectedMember && styles.triggerEmpty]}
           numberOfLines={1}
         >
           {triggerLabel}
@@ -55,25 +40,36 @@ export function AssigneePicker({ label, members, selected, onChange, currentUser
         <Text style={styles.chevron}>▾</Text>
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={handleConfirm}>
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={styles.overlay}>
-          <TouchableOpacity style={styles.overlayBg} activeOpacity={1} onPress={handleConfirm} />
+          <TouchableOpacity style={styles.overlayBg} activeOpacity={1} onPress={() => setOpen(false)} />
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{label}</Text>
-              <TouchableOpacity onPress={handleConfirm} hitSlop={8}>
-                <Text style={styles.doneBtn}>{t('common.save')}</Text>
+              <TouchableOpacity onPress={() => setOpen(false)} hitSlop={8}>
+                <Text style={styles.closeBtn}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
+              {/* None option */}
+              <TouchableOpacity
+                style={styles.memberRow}
+                onPress={() => handleSelect(null)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.avatarPlaceholder} />
+                <Text style={[styles.memberName, styles.noneText]}>—</Text>
+                {selected === null && <Text style={styles.checkMark}>✓</Text>}
+              </TouchableOpacity>
+
               {members.map((m) => {
-                const checked = draft.includes(m.uid);
+                const isSelected = m.uid === selected;
                 const isMe = m.uid === currentUserUid;
                 return (
                   <TouchableOpacity
                     key={m.uid}
                     style={styles.memberRow}
-                    onPress={() => handleToggle(m.uid)}
+                    onPress={() => handleSelect(m.uid)}
                     activeOpacity={0.7}
                   >
                     <Avatar
@@ -87,9 +83,7 @@ export function AssigneePicker({ label, members, selected, onChange, currentUser
                       {m.displayName}
                       {isMe ? `  ${t('household.you')}` : ''}
                     </Text>
-                    <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                      {checked && <Text style={styles.checkMark}>✓</Text>}
-                    </View>
+                    {isSelected && <Text style={styles.checkMark}>✓</Text>}
                   </TouchableOpacity>
                 );
               })}
@@ -130,18 +124,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   sheetTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  doneBtn: { fontSize: 16, fontWeight: '600', color: COLORS.primary },
+  closeBtn: { fontSize: 16, fontWeight: '600', color: COLORS.textSecondary },
 
   memberRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
     borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
+  avatarPlaceholder: { width: 36, height: 36 },
   memberName: { flex: 1, fontSize: 15, color: COLORS.text },
-  checkbox: {
-    width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: COLORS.primary,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  checkboxChecked: { backgroundColor: COLORS.primary },
-  checkMark: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
+  noneText: { color: COLORS.textSecondary },
+  checkMark: { fontSize: 16, fontWeight: '700', color: COLORS.primary },
 });

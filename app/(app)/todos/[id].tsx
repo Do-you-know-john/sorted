@@ -100,10 +100,11 @@ export default function TodoDetailScreen() {
         <AssigneePicker
           label={t('todos.assignTo')}
           members={members}
-          selected={assignedTo}
-          onChange={async (uids) => {
-            setAssignedTo(uids);
-            await updateTodo(todo.id, { assignedTo: uids });
+          selected={assignedTo[0] ?? null}
+          onChange={async (uid) => {
+            const next = uid ? [uid] : [];
+            setAssignedTo(next);
+            await updateTodo(todo.id, { assignedTo: next });
           }}
           currentUserUid={uid}
         />
