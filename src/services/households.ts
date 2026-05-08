@@ -25,7 +25,9 @@ function generateInviteCode(): string {
   ).join('');
 }
 
-export async function createHousehold(name: string, uid: string, displayName: string, email: string): Promise<string> {
+export async function createHousehold(
+  name: string, uid: string, displayName: string, email: string, avatarId?: string,
+): Promise<string> {
   const ref = doc(collection(db, 'households'));
   const expiresAt = Timestamp.fromDate(
     new Date(Date.now() + INVITE_CODE_TTL_HOURS * 60 * 60 * 1000)
@@ -34,6 +36,7 @@ export async function createHousehold(name: string, uid: string, displayName: st
   await setDoc(ref, {
     name,
     createdBy: uid,
+    avatarId: avatarId ?? null,
     members: {
       [uid]: { uid, displayName, email, role: 'admin', joinedAt: serverTimestamp() },
     },
