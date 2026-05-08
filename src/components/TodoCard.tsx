@@ -24,26 +24,32 @@ interface Props {
 const makeStyles = (c: Colors) => StyleSheet.create({
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: c.card,
-    borderRadius: 12, padding: SPACING.md, marginBottom: SPACING.sm,
-    borderWidth: 1, borderColor: c.border, gap: SPACING.sm,
+    borderRadius: 14, paddingVertical: SPACING.md, paddingRight: SPACING.md,
+    paddingLeft: SPACING.md + 6, marginBottom: SPACING.sm,
+    borderWidth: 1, borderColor: c.border, overflow: 'hidden', gap: SPACING.sm,
   },
-  overdue: { borderColor: c.danger, backgroundColor: c.dangerLight },
-  completed: { opacity: 0.55 },
+  statusStrip: {
+    position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
+    backgroundColor: c.primary,
+  },
+  statusStripOverdue: { backgroundColor: c.danger },
+  statusStripDone: { backgroundColor: c.success },
+  completed: { opacity: 0.5 },
   checkbox: { justifyContent: 'center', alignItems: 'center' },
   checkboxDisabled: { opacity: 0.3 },
   checkCircle: {
-    width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: c.primary,
+    width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: c.primary,
     justifyContent: 'center', alignItems: 'center',
   },
-  checkCircleDone: { backgroundColor: c.primary, borderColor: c.primary },
+  checkCircleDone: { backgroundColor: c.success, borderColor: c.success },
   checkMark: { color: c.white, fontSize: 14, fontWeight: '700' },
   content: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '500', color: c.text },
+  title: { fontSize: 16, fontWeight: '600', color: c.text },
   titleDone: { textDecorationLine: 'line-through', color: c.textSecondary },
   due: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
-  dueOverdue: { color: c.danger, fontWeight: '500' },
+  dueOverdue: { color: c.danger, fontWeight: '600' },
   householdLabel: { fontSize: 11, color: c.textSecondary, marginTop: 2 },
-  justCompletedLabel: { fontSize: 12, color: c.success, marginTop: 2, fontWeight: '500' },
+  justCompletedLabel: { fontSize: 12, color: c.success, marginTop: 2, fontWeight: '600' },
 });
 
 const makeAvatarStyles = (c: Colors) => StyleSheet.create({
@@ -97,10 +103,11 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
 
   return (
     <TouchableOpacity
-      style={[styles.card, isOverdue && styles.overdue, isCompleted && styles.completed]}
+      style={[styles.card, isCompleted && styles.completed]}
       onPress={() => router.push(`/(app)/todos/${todo.id}`)}
       activeOpacity={0.7}
     >
+      <View style={[styles.statusStrip, isOverdue && styles.statusStripOverdue, isCompleted && styles.statusStripDone]} />
       <AssigneeAvatars assignedTo={todo.assignedTo} />
 
       <View style={styles.content}>

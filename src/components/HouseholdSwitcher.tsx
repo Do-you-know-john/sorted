@@ -21,6 +21,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: SPACING.sm, paddingVertical: 4,
     borderRadius: 10, maxWidth: 220,
+    borderWidth: 1.5, borderColor: c.primary,
   },
   triggerLarge: { maxWidth: '100%' },
   triggerEmoji: { fontSize: 18 },
