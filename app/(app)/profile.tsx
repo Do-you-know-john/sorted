@@ -1,23 +1,27 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
-import { updateDisplayName, changePassword } from '../../src/services/profile';
+import { updateDisplayName, changePassword, updateThemePreference } from '../../src/services/profile';
 import { updatePresetAvatar, pickAndUploadAvatarPhoto, removeAvatar, updateAvatarColor } from '../../src/services/avatar';
 import { logout } from '../../src/services/auth';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
 import { Avatar } from '../../src/components/Avatar';
 import { PRESET_AVATARS, AVATAR_COLORS } from '../../src/constants/avatars';
-import { COLORS, SPACING } from '../../src/constants';
+import { Colors, SPACING } from '../../src/constants';
+import { useTheme } from '../../src/hooks/useTheme';
+import { ThemePreference } from '../../src/types';
 import i18n from '../../src/i18n';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const appUser = useAuthStore((s) => s.appUser);
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const [displayName, setDisplayName] = useState(appUser?.displayName ?? '');
   const [nameLoading, setNameLoading] = useState(false);
@@ -140,6 +144,10 @@ export default function ProfileScreen() {
     i18n.changeLanguage(lang);
   }
 
+  async function handleTheme(pref: ThemePreference) {
+    await updateThemePreference(pref);
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -168,7 +176,7 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>{t('profile.avatar')}</Text>
-            {avatarLoading && <ActivityIndicator size="small" color={COLORS.primary} />}
+            {avatarLoading && <ActivityIndicator size="small" color={c.primary} />}
           </View>
           <View style={styles.emojiGrid}>
             {PRESET_AVATARS.map((a) => {
@@ -189,13 +197,13 @@ export default function ProfileScreen() {
             <View>
               <Text style={styles.colorLabel}>{t('profile.avatarColor')}</Text>
               <View style={styles.colorRow}>
-                {AVATAR_COLORS.map((c) => {
-                  const isActive = (appUser?.avatarColor ?? 'indigo') === c.id;
+                {AVATAR_COLORS.map((col) => {
+                  const isActive = (appUser?.avatarColor ?? 'indigo') === col.id;
                   return (
                     <TouchableOpacity
-                      key={c.id}
-                      style={[styles.colorSwatch, { backgroundColor: c.bg }, isActive && styles.colorSwatchActive]}
-                      onPress={() => handleSelectColor(c.id)}
+                      key={col.id}
+                      style={[styles.colorSwatch, { backgroundColor: col.bg }, isActive && styles.colorSwatchActive]}
+                      onPress={() => handleSelectColor(col.id)}
                       disabled={avatarLoading}
                     />
                   );
@@ -264,6 +272,16 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Theme */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('profile.theme')}</Text>
+          <View style={styles.langRow}>
+            <ThemeButton label={t('profile.themeSystem')} pref="system" current={appUser?.themePreference ?? 'system'} onPress={handleTheme} />
+            <ThemeButton label={t('profile.themeLight')} pref="light" current={appUser?.themePreference ?? 'system'} onPress={handleTheme} />
+            <ThemeButton label={t('profile.themeDark')} pref="dark" current={appUser?.themePreference ?? 'system'} onPress={handleTheme} />
+          </View>
+        </View>
+
         <Button label={t('auth.logout')} onPress={handleLogout} variant="danger" />
       </ScrollView>
     </SafeAreaView>
@@ -273,6 +291,8 @@ export default function ProfileScreen() {
 function LangButton({ label, lang, current, onPress }: {
   label: string; lang: 'de' | 'en'; current: string; onPress: (l: 'de' | 'en') => void;
 }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const active = current === lang;
   return (
     <TouchableOpacity
@@ -284,25 +304,41 @@ function LangButton({ label, lang, current, onPress }: {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+function ThemeButton({ label, pref, current, onPress }: {
+  label: string; pref: ThemePreference; current: ThemePreference; onPress: (p: ThemePreference) => void;
+}) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const active = current === pref;
+  return (
+    <TouchableOpacity
+      style={[styles.langBtn, active && styles.langBtnActive]}
+      onPress={() => onPress(pref)}
+    >
+      <Text style={[styles.langBtnText, active && styles.langBtnTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  title: { fontSize: 17, fontWeight: '600', color: COLORS.text },
-  close: { fontSize: 18, color: COLORS.textSecondary, width: 32 },
+  title: { fontSize: 17, fontWeight: '600', color: c.text },
+  close: { fontSize: 18, color: c.textSecondary, width: 32 },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   avatarSection: { alignItems: 'center', paddingVertical: SPACING.md, gap: SPACING.sm },
-  emailText: { fontSize: 14, color: COLORS.textSecondary },
+  emailText: { fontSize: 14, color: c.textSecondary },
   card: {
-    backgroundColor: COLORS.white, borderRadius: 14, padding: SPACING.md,
-    gap: SPACING.sm, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: c.card, borderRadius: 14, padding: SPACING.md,
+    gap: SPACING.sm, borderWidth: 1, borderColor: c.border,
   },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   cardTitle: {
-    fontSize: 13, fontWeight: '700', color: COLORS.textSecondary,
+    fontSize: 13, fontWeight: '700', color: c.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.xs,
     flex: 1,
   },
@@ -311,36 +347,36 @@ const styles = StyleSheet.create({
   },
   emojiBtn: {
     width: 52, height: 52, borderRadius: 14,
-    backgroundColor: COLORS.background,
-    borderWidth: 2, borderColor: COLORS.border,
+    backgroundColor: c.background,
+    borderWidth: 2, borderColor: c.border,
     justifyContent: 'center', alignItems: 'center',
   },
-  emojiBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  emojiBtnActive: { borderColor: c.primary, backgroundColor: c.primaryLight },
   emojiText: { fontSize: 26 },
   colorLabel: {
-    fontSize: 12, color: COLORS.textSecondary, marginBottom: SPACING.xs,
+    fontSize: 12, color: c.textSecondary, marginBottom: SPACING.xs,
   },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   colorSwatch: {
     width: 32, height: 32, borderRadius: 16,
     borderWidth: 2, borderColor: 'transparent',
   },
-  colorSwatchActive: { borderColor: COLORS.white, elevation: 3, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4 },
+  colorSwatchActive: { borderColor: c.white, elevation: 3, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4 },
   uploadBtn: {
-    borderWidth: 1, borderColor: COLORS.primary, borderRadius: 10,
+    borderWidth: 1, borderColor: c.primary, borderRadius: 10,
     paddingVertical: SPACING.sm, alignItems: 'center',
   },
-  uploadBtnText: { color: COLORS.primary, fontWeight: '600', fontSize: 15 },
-  removeText: { color: COLORS.danger, fontSize: 13, textAlign: 'center' },
-  error: { color: COLORS.danger, fontSize: 13 },
-  success: { color: COLORS.success, fontSize: 13 },
+  uploadBtnText: { color: c.primary, fontWeight: '600', fontSize: 15 },
+  removeText: { color: c.danger, fontSize: 13, textAlign: 'center' },
+  error: { color: c.danger, fontSize: 13 },
+  success: { color: c.success, fontSize: 13 },
   langRow: { flexDirection: 'row', gap: SPACING.sm },
   langBtn: {
     flex: 1, paddingVertical: SPACING.sm, borderRadius: 10,
-    borderWidth: 1, borderColor: COLORS.border, alignItems: 'center',
-    backgroundColor: COLORS.white,
+    borderWidth: 1, borderColor: c.border, alignItems: 'center',
+    backgroundColor: c.card,
   },
-  langBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  langBtnText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
-  langBtnTextActive: { color: COLORS.white },
+  langBtnActive: { backgroundColor: c.primary, borderColor: c.primary },
+  langBtnText: { fontSize: 15, fontWeight: '600', color: c.textSecondary },
+  langBtnTextActive: { color: c.white },
 });

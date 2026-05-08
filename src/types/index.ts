@@ -33,6 +33,7 @@ export interface RecurrenceRule {
 }
 
 export type TodoStatus = 'pending' | 'completed';
+export type TodoPriority = 'normal' | 'urgent';
 
 export interface Todo {
   id: string;
@@ -44,8 +45,10 @@ export interface Todo {
   visibleTo: string[]; // user uids, empty = visible to all members
   notifyOnComplete: string[]; // user uids
   notifyOnOverdue: string[]; // user uids
+  dueFrom: Timestamp | null;
   dueDate: Timestamp | null;
   status: TodoStatus;
+  priority?: TodoPriority;
   completedAt: Timestamp | null;
   completedBy: string | null;
   createdAt: Timestamp;
@@ -72,6 +75,8 @@ export interface ShoppingItem {
   createdAt: Timestamp;
 }
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 export interface AppUser {
   uid: string;
   email: string;
@@ -83,4 +88,5 @@ export interface AppUser {
   avatarId?: string | null;
   photoURL?: string | null;
   avatarColor?: string | null;
+  themePreference?: ThemePreference;
 }

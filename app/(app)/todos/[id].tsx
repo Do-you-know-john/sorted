@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,8 @@ import { Todo } from '../../../src/types';
 import { Button } from '../../../src/components/ui/Button';
 import { AssigneePicker } from '../../../src/components/AssigneePicker';
 import { formatRecurrence } from '../../../src/components/RecurrencePicker';
-import { COLORS, SPACING } from '../../../src/constants';
+import { Colors, SPACING } from '../../../src/constants';
+import { useTheme } from '../../../src/hooks/useTheme';
 import { format, isPast } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import i18n from '../../../src/i18n';
@@ -26,6 +27,8 @@ export default function TodoDetailScreen() {
   const [todo, setTodo] = useState<Todo | null>(null);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const dateLocale = i18n.language === 'de' ? de : enUS;
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   useEffect(() => {
     if (!id) return;
@@ -51,7 +54,8 @@ export default function TodoDetailScreen() {
 
   const members = household ? Object.values(household.members) : [];
   const getName = (memberUid: string) => members.find((m) => m.uid === memberUid)?.displayName ?? memberUid;
-  const isOverdue = todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending';
+  const isOverdue = !!(todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending');
+  const isDue = !isOverdue && !!(todo.dueFrom && isPast(todo.dueFrom.toDate()) && todo.status === 'pending');
 
   async function handleDelete() {
     Alert.alert(t('todos.deleteTitle'), t('todos.deleteMessage'), [
@@ -65,7 +69,9 @@ export default function TodoDetailScreen() {
 
   const statusLabel = todo.status === 'completed'
     ? t('todos.statusCompleted')
-    : isOverdue ? t('todos.statusOverdue') : t('todos.statusPending');
+    : isOverdue ? t('todos.statusOverdue')
+    : isDue ? t('todos.statusDue')
+    : t('todos.statusPending');
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -84,13 +90,21 @@ export default function TodoDetailScreen() {
             <Text style={styles.overdueBannerText}>{t('todos.overdueBanner')}</Text>
           </View>
         )}
+        {isDue && (
+          <View style={styles.dueBanner}>
+            <Text style={styles.dueBannerText}>{t('todos.dueBanner')}</Text>
+          </View>
+        )}
 
         <Text style={styles.title}>{todo.title}</Text>
         {todo.description ? <Text style={styles.description}>{todo.description}</Text> : null}
 
         <InfoRow label={t('todos.status')} value={statusLabel} />
+        {todo.dueFrom && (
+          <InfoRow label={t('todos.dueFrom')} value={format(todo.dueFrom.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
+        )}
         {todo.dueDate && (
-          <InfoRow label={t('todos.due')} value={format(todo.dueDate.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
+          <InfoRow label={t('todos.dueUntil')} value={format(todo.dueDate.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
         )}
         {todo.completedAt && (
           <InfoRow label={t('todos.completedAt')} value={format(todo.completedAt.toDate(), 'MMM d, yyyy · HH:mm', { locale: dateLocale })} />
@@ -114,6 +128,13 @@ export default function TodoDetailScreen() {
         />
 
         <View style={styles.actions}>
+          {todo.status === 'pending' && (
+            <Button
+              label={todo.priority === 'urgent' ? t('todos.unmarkUrgent') : t('todos.markUrgent')}
+              onPress={() => updateTodo(todo.id, { priority: todo.priority === 'urgent' ? 'normal' : 'urgent' })}
+              variant="secondary"
+            />
+          )}
           {todo.status === 'pending' ? (
             assignedTo.includes(uid ?? '') ? (
               <Button label={t('todos.markComplete')} onPress={() => uid && completeTodo(todo.id, uid)} />
@@ -128,6 +149,8 @@ export default function TodoDetailScreen() {
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -136,28 +159,33 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   navBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  back: { color: COLORS.primary, fontSize: 16 },
-  delete: { color: COLORS.danger, fontSize: 16 },
+  back: { color: c.primary, fontSize: 16 },
+  delete: { color: c.danger, fontSize: 16 },
   content: { padding: SPACING.md, gap: SPACING.md },
   overdueBanner: {
-    backgroundColor: COLORS.dangerLight, borderRadius: 10, padding: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.danger,
+    backgroundColor: c.dangerLight, borderRadius: 10, padding: SPACING.sm,
+    borderWidth: 1, borderColor: c.danger,
   },
-  overdueBannerText: { color: COLORS.danger, fontWeight: '600' },
-  title: { fontSize: 24, fontWeight: '700', color: COLORS.text },
-  description: { fontSize: 16, color: COLORS.textSecondary, lineHeight: 22 },
+  overdueBannerText: { color: c.danger, fontWeight: '600' },
+  dueBanner: {
+    backgroundColor: c.warningLight, borderRadius: 10, padding: SPACING.sm,
+    borderWidth: 1, borderColor: c.warning,
+  },
+  dueBannerText: { color: c.warning, fontWeight: '600' },
+  title: { fontSize: 24, fontWeight: '700', color: c.text },
+  description: { fontSize: 16, color: c.textSecondary, lineHeight: 22 },
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between',
-    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  infoLabel: { fontSize: 14, color: COLORS.textSecondary },
-  infoValue: { fontSize: 14, color: COLORS.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
+  infoLabel: { fontSize: 14, color: c.textSecondary },
+  infoValue: { fontSize: 14, color: c.text, fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
   actions: { marginTop: SPACING.md },
 });

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,8 @@ import { useAllHouseholds } from '../../../src/hooks/useAllHouseholds';
 import { createTodo } from '../../../src/services/todos';
 import { Button } from '../../../src/components/ui/Button';
 import { TextInput } from '../../../src/components/ui/TextInput';
-import { COLORS, SPACING } from '../../../src/constants';
+import { Colors, SPACING } from '../../../src/constants';
+import { useTheme } from '../../../src/hooks/useTheme';
 import { HouseholdMember, RecurrenceRule } from '../../../src/types';
 import { AssigneePicker } from '../../../src/components/AssigneePicker';
 import { RecurrencePicker } from '../../../src/components/RecurrencePicker';
@@ -24,6 +25,8 @@ export default function CreateTodoScreen() {
   const appUser = useAuthStore((s) => s.appUser);
   const households = useAllHouseholds(appUser?.householdIds ?? []);
   const dateLocale = i18n.language === 'de' ? de : enUS;
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string>(
     appUser?.activeHouseholdId ?? ''
@@ -35,8 +38,12 @@ export default function CreateTodoScreen() {
   const [notifyOnComplete, setNotifyOnComplete] = useState<string[]>([]);
   const [notifyOnOverdue, setNotifyOnOverdue] = useState<string[]>([]);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
-  const [dueDate, setDueDate] = useState<Date | null>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isUrgent, setIsUrgent] = useState(false);
+  const [dueFrom, setDueFrom] = useState<Date | null>(new Date());
+  const [dueDate, setDueDate] = useState<Date | null>(new Date(Date.now() + 24 * 3600_000));
+  const [dueUntilManuallySet, setDueUntilManuallySet] = useState(false);
+  const [showDueFromPicker, setShowDueFromPicker] = useState(false);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -76,8 +83,10 @@ export default function CreateTodoScreen() {
         visibleTo,
         notifyOnComplete,
         notifyOnOverdue,
+        dueFrom,
         dueDate,
         recurrence,
+        priority: isUrgent ? 'urgent' : 'normal',
         createdBy: appUser!.uid,
       });
       setSubmitted(true);
@@ -138,30 +147,71 @@ export default function CreateTodoScreen() {
         />
 
         <View>
-          <Text style={styles.sectionLabel}>{t('todos.dueDate')}</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+          <Text style={styles.sectionLabel}>{t('todos.dueWindow')}</Text>
+
+          <Text style={styles.subLabel}>{t('todos.dueFrom')}</Text>
+          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDueFromPicker(true)}>
+            <Text style={styles.dateButtonText}>
+              {dueFrom
+                ? format(dueFrom, 'MMM d, yyyy · HH:mm', { locale: dateLocale })
+                : t('todos.immediately')}
+            </Text>
+          </TouchableOpacity>
+          {showDueFromPicker && (
+            <DateTimePicker
+              value={dueFrom ?? new Date()}
+              mode="datetime"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              onChange={(_, date) => {
+                setShowDueFromPicker(Platform.OS === 'ios');
+                if (date) {
+                  setDueFrom(date);
+                  if (!dueUntilManuallySet) {
+                    setDueDate(new Date(date.getTime() + 24 * 3600_000));
+                  }
+                }
+              }}
+            />
+          )}
+
+          <Text style={[styles.subLabel, { marginTop: SPACING.sm }]}>{t('todos.dueUntil')}</Text>
+          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDueDatePicker(true)}>
             <Text style={styles.dateButtonText}>
               {dueDate
                 ? format(dueDate, 'MMM d, yyyy · HH:mm', { locale: dateLocale })
                 : t('todos.noDueDate')}
             </Text>
           </TouchableOpacity>
-          {dueDate && (
-            <TouchableOpacity onPress={() => setDueDate(null)}>
-              <Text style={styles.clearDate}>{t('todos.clearDate')}</Text>
-            </TouchableOpacity>
-          )}
-          {showDatePicker && (
+          {showDueDatePicker && (
             <DateTimePicker
               value={dueDate ?? new Date()}
               mode="datetime"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
               onChange={(_, date) => {
-                setShowDatePicker(Platform.OS === 'ios');
-                if (date) setDueDate(date);
+                setShowDueDatePicker(Platform.OS === 'ios');
+                if (date) { setDueDate(date); setDueUntilManuallySet(true); }
               }}
             />
           )}
+
+          {(dueFrom || dueDate) && (
+            <TouchableOpacity onPress={() => { setDueFrom(null); setDueDate(null); setDueUntilManuallySet(false); }}>
+              <Text style={styles.clearDate}>{t('todos.clearWindow')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.toggleRow}>
+          <View>
+            <Text style={styles.sectionLabel}>{t('todos.urgentLabel')}</Text>
+            <Text style={styles.sectionHint}>{t('todos.urgentHint')}</Text>
+          </View>
+          <Switch
+            value={isUrgent}
+            onValueChange={setIsUrgent}
+            trackColor={{ false: c.border, true: c.warning }}
+            thumbColor={c.white}
+          />
         </View>
 
         <View>
@@ -215,6 +265,8 @@ function MemberSelector({
   selected: string[];
   onToggle: (uid: string) => void;
 }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View>
       {label && <Text style={styles.sectionLabel}>{label}</Text>}
@@ -230,40 +282,45 @@ function MemberSelector({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   navBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  navTitle: { fontSize: 17, fontWeight: '600', color: COLORS.text },
-  cancel: { color: COLORS.primary, fontSize: 16, width: 80 },
+  navTitle: { fontSize: 17, fontWeight: '600', color: c.text },
+  cancel: { color: c.primary, fontSize: 16, width: 80 },
   form: { padding: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl * 2 },
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: SPACING.xs },
-  sectionHint: { fontSize: 12, color: COLORS.textSecondary, marginBottom: SPACING.xs },
+  sectionLabel: { fontSize: 14, fontWeight: '600', color: c.text, marginBottom: SPACING.xs },
+  sectionHint: { fontSize: 12, color: c.textSecondary, marginBottom: SPACING.xs },
   householdRow: { marginBottom: SPACING.xs },
   householdChip: {
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs + 2,
-    borderRadius: 20, borderWidth: 1, borderColor: COLORS.border,
-    backgroundColor: COLORS.white, marginRight: SPACING.sm,
+    borderRadius: 20, borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.card, marginRight: SPACING.sm,
   },
-  householdChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  householdChipText: { fontSize: 14, color: COLORS.textSecondary },
-  householdChipTextActive: { color: COLORS.white, fontWeight: '600' },
+  householdChipActive: { backgroundColor: c.primary, borderColor: c.primary },
+  householdChipText: { fontSize: 14, color: c.textSecondary },
+  householdChipTextActive: { color: c.white, fontWeight: '600' },
   dateButton: {
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 10,
-    padding: SPACING.md, backgroundColor: COLORS.white,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    padding: SPACING.md, backgroundColor: c.card,
   },
-  dateButtonText: { color: COLORS.text, fontSize: 15 },
-  clearDate: { color: COLORS.danger, fontSize: 13, marginTop: SPACING.xs },
+  dateButtonText: { color: c.text, fontSize: 15 },
+  clearDate: { color: c.danger, fontSize: 13, marginTop: SPACING.xs },
   memberRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm, gap: SPACING.sm },
   memberCheck: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.primary,
+    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: c.primary,
     justifyContent: 'center', alignItems: 'center',
   },
-  memberCheckActive: { backgroundColor: COLORS.primary },
-  memberCheckMark: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
-  memberName: { fontSize: 15, color: COLORS.text },
-  error: { color: COLORS.danger, fontSize: 14 },
+  memberCheckActive: { backgroundColor: c.primary },
+  memberCheckMark: { color: c.white, fontSize: 13, fontWeight: '700' },
+  memberName: { fontSize: 15, color: c.text },
+  subLabel: { fontSize: 12, fontWeight: '600', color: c.textSecondary, marginBottom: SPACING.xs },
+  toggleRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+  },
+  error: { color: c.danger, fontSize: 14 },
 });

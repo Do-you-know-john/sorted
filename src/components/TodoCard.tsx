@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { format, isPast } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { Todo } from '../types';
-import { COLORS, SPACING } from '../constants';
+import { Colors, SPACING } from '../constants';
 import { completeTodo, reopenTodo } from '../services/todos';
 import { useAuthStore } from '../stores/authStore';
 import { useHouseholdStore } from '../stores/householdStore';
 import { isJustCompleted } from '../hooks/useTodos';
+import { useTheme } from '../hooks/useTheme';
 import { Avatar } from './Avatar';
-import { emojiForHouseholdAvatar } from '../constants/avatars';
+import { HouseholdIcon } from './HouseholdIcon';
 import i18n from '../i18n';
 
 interface Props {
@@ -20,15 +21,74 @@ interface Props {
   householdAvatarId?: string | null;
 }
 
+const makeStyles = (c: Colors) => StyleSheet.create({
+  card: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: c.card,
+    borderRadius: 14, paddingVertical: SPACING.md, paddingRight: SPACING.md,
+    paddingLeft: SPACING.md + 6, marginBottom: SPACING.sm,
+    borderWidth: 1, borderColor: c.border, overflow: 'hidden', gap: SPACING.sm,
+  },
+  cardOverdue: { borderColor: c.danger, borderWidth: 2 },
+  cardDue: { borderColor: c.warning, borderWidth: 2 },
+  statusStrip: {
+    position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
+    backgroundColor: c.primary,
+  },
+  statusStripDue: { backgroundColor: c.warning },
+  statusStripOverdue: { backgroundColor: c.danger },
+  statusStripDone: { backgroundColor: c.success },
+  completed: { opacity: 0.5 },
+  checkbox: { justifyContent: 'center', alignItems: 'center' },
+  checkboxDisabled: { opacity: 0.3 },
+  checkCircle: {
+    width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: c.primary,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  checkCircleDone: { backgroundColor: c.success, borderColor: c.success },
+  checkMark: { color: c.white, fontSize: 14, fontWeight: '700' },
+  content: { flex: 1 },
+  title: { fontSize: 16, fontWeight: '600', color: c.text },
+  titleDone: { textDecorationLine: 'line-through', color: c.textSecondary },
+  due: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+  dueOverdue: { color: c.danger, fontWeight: '600' },
+  dueDue: { color: c.warning, fontWeight: '600' },
+  householdLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  householdLabel: { fontSize: 11, color: c.textSecondary },
+  justCompletedLabel: { fontSize: 12, color: c.success, marginTop: 2, fontWeight: '600' },
+});
+
+const makeAvatarStyles = (c: Colors) => StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center' },
+  slot: { borderWidth: 2, borderColor: c.white, borderRadius: 20 },
+  overlap: { marginLeft: -10 },
+  overflowBubble: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: c.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  overflowText: { fontSize: 11, fontWeight: '700', color: c.textSecondary },
+  unassigned: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: c.background,
+    borderWidth: 1.5, borderColor: c.border, borderStyle: 'dashed',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  unassignedDash: { fontSize: 13, color: c.textSecondary, fontWeight: '600' },
+});
+
 export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
   const router = useRouter();
   const { t } = useTranslation();
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
   const dateLocale = i18n.language === 'de' ? de : enUS;
-  const isOverdue = todo.dueDate && isPast(todo.dueDate.toDate()) && todo.status === 'pending';
   const isCompleted = todo.status === 'completed';
+  const isOverdue = !isCompleted && !!todo.dueDate && isPast(todo.dueDate.toDate());
+  const isDue = !isCompleted && !isOverdue && !!todo.dueFrom && isPast(todo.dueFrom.toDate());
+  const isUrgent = todo.priority === 'urgent' && !isCompleted;
   const justCompleted = isJustCompleted(todo);
   const isAssignedToMe = !!uid && todo.assignedTo.includes(uid);
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   function handleToggle() {
     if (!uid) return;
@@ -50,28 +110,37 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
 
   return (
     <TouchableOpacity
-      style={[styles.card, isOverdue && styles.overdue, isCompleted && styles.completed]}
+      style={[styles.card, isUrgent && !isCompleted && (isOverdue ? styles.cardOverdue : styles.cardDue), isCompleted && styles.completed]}
       onPress={() => router.push(`/(app)/todos/${todo.id}`)}
       activeOpacity={0.7}
     >
+      <View style={[styles.statusStrip, isDue && styles.statusStripDue, isOverdue && styles.statusStripOverdue, isCompleted && styles.statusStripDone]} />
       <AssigneeAvatars assignedTo={todo.assignedTo} />
 
       <View style={styles.content}>
         <Text style={[styles.title, isCompleted && styles.titleDone]} numberOfLines={1}>
-          {todo.title}
+          {isUrgent && '🚩 '}{todo.title}
         </Text>
         {householdName && (
-          <Text style={styles.householdLabel}>
-            {emojiForHouseholdAvatar(householdAvatarId)} {householdName}
-          </Text>
+          <View style={styles.householdLabelRow}>
+            <HouseholdIcon avatarId={householdAvatarId} size={14} />
+            <Text style={styles.householdLabel}>{householdName}</Text>
+          </View>
         )}
         {justCompleted && !isOverdue && (
           <Text style={styles.justCompletedLabel}>{t('todos.justCompleted')}</Text>
         )}
-        {todo.dueDate && !isCompleted && (
-          <Text style={[styles.due, isOverdue && styles.dueOverdue]}>
-            {isOverdue ? `⚠ ${t('todos.statusOverdue')} · ` : ''}
-            {format(todo.dueDate.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}
+        {!isCompleted && (isOverdue || isDue || todo.dueFrom || todo.dueDate) && (
+          <Text style={[styles.due, isOverdue && styles.dueOverdue, isDue && styles.dueDue]}>
+            {isOverdue
+              ? `⚠ ${t('todos.statusOverdue')} · ${format(todo.dueDate!.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}`
+              : isDue && todo.dueDate
+              ? `${t('todos.dueBefore')} ${format(todo.dueDate.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}`
+              : todo.dueFrom
+              ? `${t('todos.dueFromLabel')} ${format(todo.dueFrom.toDate(), 'MMM d, HH:mm', { locale: dateLocale })}`
+              : todo.dueDate
+              ? format(todo.dueDate.toDate(), 'MMM d, HH:mm', { locale: dateLocale })
+              : null}
           </Text>
         )}
       </View>
@@ -92,6 +161,8 @@ export function TodoCard({ todo, householdName, householdAvatarId }: Props) {
 function AssigneeAvatars({ assignedTo }: { assignedTo: string[] }) {
   const household = useHouseholdStore((s) => s.household);
   const appUser = useAuthStore((s) => s.appUser);
+  const c = useTheme();
+  const avatarStyles = useMemo(() => makeAvatarStyles(c), [c]);
 
   if (assignedTo.length === 0) {
     return (
@@ -137,47 +208,3 @@ function AssigneeAvatars({ assignedTo }: { assignedTo: string[] }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white,
-    borderRadius: 12, padding: SPACING.md, marginBottom: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.border, gap: SPACING.sm,
-  },
-  overdue: { borderColor: COLORS.danger, backgroundColor: COLORS.dangerLight },
-  completed: { opacity: 0.55 },
-  checkbox: { justifyContent: 'center', alignItems: 'center' },
-  checkboxDisabled: { opacity: 0.3 },
-  checkCircle: {
-    width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.primary,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  checkCircleDone: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  checkMark: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
-  content: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '500', color: COLORS.text },
-  titleDone: { textDecorationLine: 'line-through', color: COLORS.textSecondary },
-  due: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  dueOverdue: { color: COLORS.danger, fontWeight: '500' },
-  householdLabel: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
-  justCompletedLabel: { fontSize: 12, color: COLORS.success, marginTop: 2, fontWeight: '500' },
-});
-
-const avatarStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center' },
-  slot: { borderWidth: 2, borderColor: COLORS.white, borderRadius: 20 },
-  overlap: { marginLeft: -10 },
-  overflowBubble: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: COLORS.border,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  overflowText: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary },
-  unassigned: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: COLORS.background,
-    borderWidth: 1.5, borderColor: COLORS.border, borderStyle: 'dashed',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  unassignedDash: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
-});

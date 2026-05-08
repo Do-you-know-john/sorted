@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, Share, Modal, TextInput as RNTextInput, ActivityIndicator,
@@ -9,11 +9,13 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../../src/stores/householdStore';
 import { refreshInviteCode, getTodoCount, deleteHousehold, updateHouseholdAvatar } from '../../../../src/services/households';
-import { HOUSEHOLD_AVATARS, emojiForHouseholdAvatar } from '../../../../src/constants/avatars';
+import { HOUSEHOLD_AVATARS } from '../../../../src/constants/avatars';
+import { HouseholdIcon } from '../../../../src/components/HouseholdIcon';
 import { HouseholdSwitcher } from '../../../../src/components/HouseholdSwitcher';
 import { logout } from '../../../../src/services/auth';
 import { Button } from '../../../../src/components/ui/Button';
-import { COLORS, SPACING } from '../../../../src/constants';
+import { Colors, SPACING } from '../../../../src/constants';
+import { useTheme } from '../../../../src/hooks/useTheme';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import i18n from '../../../../src/i18n';
@@ -28,6 +30,8 @@ export default function HouseholdScreen() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const members = household ? Object.values(household.members) : [];
   const isAdmin = household?.members[appUser?.uid ?? '']?.role === 'admin';
@@ -124,7 +128,7 @@ export default function HouseholdScreen() {
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>{t('household.avatar')}</Text>
-            {avatarLoading && <ActivityIndicator size="small" color={COLORS.primary} />}
+            {avatarLoading && <ActivityIndicator size="small" color={c.primary} />}
           </View>
           <View style={styles.emojiGrid}>
             {HOUSEHOLD_AVATARS.map((a) => {
@@ -136,7 +140,7 @@ export default function HouseholdScreen() {
                   onPress={() => handleSelectAvatar(a.id)}
                   disabled={avatarLoading}
                 >
-                  <Text style={styles.emojiText}>{a.emoji}</Text>
+                  <HouseholdIcon avatarId={a.id} size={38} />
                 </TouchableOpacity>
               );
             })}
@@ -205,7 +209,7 @@ export default function HouseholdScreen() {
               value={confirmInput}
               onChangeText={setConfirmInput}
               placeholder={household?.name ?? ''}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={c.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardAppearance="light"
@@ -220,7 +224,7 @@ export default function HouseholdScreen() {
                 disabled={confirmInput.trim() !== (household?.name ?? '') || deleting}
               >
                 {deleting
-                  ? <ActivityIndicator color={COLORS.white} />
+                  ? <ActivityIndicator color={c.white} />
                   : <Text style={styles.confirmBtnText}>{t('household.deleteBtn')}</Text>}
               </TouchableOpacity>
             </View>
@@ -231,52 +235,49 @@ export default function HouseholdScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (c: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   header: {
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: c.card,
+    borderBottomWidth: 1, borderBottomColor: c.border,
   },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl * 2 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   emojiBtn: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: COLORS.background,
-    borderWidth: 2, borderColor: COLORS.border,
-    justifyContent: 'center', alignItems: 'center',
+    borderRadius: 16, borderWidth: 2, borderColor: 'transparent',
+    padding: 3,
   },
-  emojiBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
-  emojiText: { fontSize: 26 },
+  emojiBtnActive: { borderColor: c.primary },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: c.card,
     borderRadius: 14,
     padding: SPACING.md,
     gap: SPACING.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
-  dangerCard: { borderColor: COLORS.danger + '44' },
-  cardTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  dangerTitle: { color: COLORS.danger },
-  code: { fontSize: 32, fontWeight: '800', letterSpacing: 6, color: COLORS.primary, textAlign: 'center', paddingVertical: SPACING.sm },
-  codeExpired: { color: COLORS.textSecondary },
-  expiry: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center' },
-  expiryExpired: { color: COLORS.danger },
+  dangerCard: { borderColor: c.danger + '44' },
+  cardTitle: { fontSize: 13, fontWeight: '700', color: c.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  dangerTitle: { color: c.danger },
+  code: { fontSize: 32, fontWeight: '800', letterSpacing: 6, color: c.primary, textAlign: 'center', paddingVertical: SPACING.sm },
+  codeExpired: { color: c.textSecondary },
+  expiry: { fontSize: 13, color: c.textSecondary, textAlign: 'center' },
+  expiryExpired: { color: c.danger },
   codeActions: { flexDirection: 'row', gap: SPACING.sm },
   memberRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.xs },
   avatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: c.primaryLight,
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarText: { color: COLORS.primary, fontWeight: '700', fontSize: 16 },
-  memberName: { fontSize: 15, fontWeight: '500', color: COLORS.text },
-  memberEmail: { fontSize: 12, color: COLORS.textSecondary },
+  avatarText: { color: c.primary, fontWeight: '700', fontSize: 16 },
+  memberName: { fontSize: 15, fontWeight: '500', color: c.text },
+  memberEmail: { fontSize: 12, color: c.textSecondary },
   role: {
-    fontSize: 12, color: COLORS.textSecondary,
-    backgroundColor: COLORS.background,
+    fontSize: 12, color: c.textSecondary,
+    backgroundColor: c.background,
     paddingHorizontal: SPACING.sm, paddingVertical: 2, borderRadius: 8,
   },
   overlay: {
@@ -284,26 +285,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', padding: SPACING.lg,
   },
   modalBox: {
-    backgroundColor: COLORS.white, borderRadius: 16,
+    backgroundColor: c.card, borderRadius: 16,
     padding: SPACING.lg, width: '100%', gap: SPACING.md,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.danger },
-  modalHint: { fontSize: 14, color: COLORS.textSecondary },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: c.danger },
+  modalHint: { fontSize: 14, color: c.textSecondary },
   modalInput: {
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: 10,
-    padding: SPACING.sm, fontSize: 16, color: COLORS.text,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    padding: SPACING.sm, fontSize: 16, color: c.text,
   },
   modalActions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xs },
   cancelBtn: {
     flex: 1, padding: SPACING.sm, borderRadius: 10,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderWidth: 1, borderColor: c.border,
     alignItems: 'center',
   },
-  cancelBtnText: { fontSize: 15, color: COLORS.text, fontWeight: '500' },
+  cancelBtnText: { fontSize: 15, color: c.text, fontWeight: '500' },
   confirmBtn: {
     flex: 1, padding: SPACING.sm, borderRadius: 10,
-    backgroundColor: COLORS.danger, alignItems: 'center',
+    backgroundColor: c.danger, alignItems: 'center',
   },
-  confirmBtnDisabled: { backgroundColor: COLORS.danger + '55' },
-  confirmBtnText: { fontSize: 15, color: COLORS.white, fontWeight: '600' },
+  confirmBtnDisabled: { backgroundColor: c.danger + '55' },
+  confirmBtnText: { fontSize: 15, color: c.white, fontWeight: '600' },
 });

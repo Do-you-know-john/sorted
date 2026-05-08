@@ -19,25 +19,24 @@ export function bgForColor(id: string | null | undefined): string | null {
 }
 
 export const HOUSEHOLD_AVATARS = [
-  { id: 'house',     emoji: '🏠' },
-  { id: 'garden',    emoji: '🏡' },
-  { id: 'building',  emoji: '🏢' },
-  { id: 'castle',    emoji: '🏰' },
-  { id: 'hut',       emoji: '🛖' },
-  { id: 'tent',      emoji: '⛺' },
-  { id: 'tree',      emoji: '🌳' },
-  { id: 'sunflower', emoji: '🌻' },
-  { id: 'wave',      emoji: '🌊' },
-  { id: 'mountain',  emoji: '🏔️' },
-  { id: 'island',    emoji: '🏝️' },
-  { id: 'rainbow',   emoji: '🌈' },
+  { id: 'house',     color: '#4F46E5' },
+  { id: 'garden',    color: '#10B981' },
+  { id: 'building',  color: '#64748B' },
+  { id: 'castle',    color: '#7C3AED' },
+  { id: 'hut',       color: '#F97316' },
+  { id: 'tent',      color: '#F59E0B' },
+  { id: 'tree',      color: '#16A34A' },
+  { id: 'sunflower', color: '#EF4444' },
+  { id: 'wave',      color: '#0EA5E9' },
+  { id: 'mountain',  color: '#6B7280' },
+  { id: 'island',    color: '#14B8A6' },
+  { id: 'rainbow',   color: '#EC4899' },
 ] as const;
 
 export type HouseholdAvatarId = (typeof HOUSEHOLD_AVATARS)[number]['id'];
 
-export function emojiForHouseholdAvatar(id: string | null | undefined): string {
-  if (!id) return '🏠';
-  return HOUSEHOLD_AVATARS.find((a) => a.id === id)?.emoji ?? '🏠';
+export function householdAvatarMeta(id: string | null | undefined): { color: string } {
+  return HOUSEHOLD_AVATARS.find((a) => a.id === id) ?? HOUSEHOLD_AVATARS[0];
 }
 
 export const PRESET_AVATARS = [

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   ScrollView, ActivityIndicator,
@@ -6,20 +6,58 @@ import {
 import { doc, updateDoc } from 'firebase/firestore';
 import { useAuthStore } from '../stores/authStore';
 import { useAllHouseholds } from '../hooks/useAllHouseholds';
-import { emojiForHouseholdAvatar } from '../constants/avatars';
+import { HouseholdIcon } from './HouseholdIcon';
 import { db } from '../services/firebase';
-import { COLORS, SPACING } from '../constants';
+import { useTheme } from '../hooks/useTheme';
+import { Colors, SPACING } from '../constants';
 
 interface Props {
   /** Visual weight of the trigger — 'large' for the household tab header, 'normal' for todos */
   size?: 'normal' | 'large';
 }
 
+const makeStyles = (c: Colors) => StyleSheet.create({
+  trigger: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: SPACING.sm, paddingVertical: 4,
+    borderRadius: 10, maxWidth: 220,
+    borderWidth: 1.5, borderColor: c.primary,
+  },
+  triggerLarge: { maxWidth: '100%' },
+  triggerName: { fontSize: 17, fontWeight: '700', color: c.text, flexShrink: 1 },
+  triggerNameLarge: { fontSize: 24, fontWeight: '800' },
+  chevron: { fontSize: 13, color: c.textSecondary, marginLeft: 2 },
+
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-start', paddingTop: 100,
+    paddingHorizontal: SPACING.md,
+  },
+  sheet: {
+    backgroundColor: c.card, borderRadius: 16,
+    borderWidth: 1, borderColor: c.border,
+    overflow: 'hidden', maxHeight: 320,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
+  },
+  item: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.md,
+    borderBottomWidth: 1, borderBottomColor: c.border,
+  },
+  itemActive: { backgroundColor: c.primaryLight },
+  itemName: { flex: 1, fontSize: 16, fontWeight: '500', color: c.text },
+  itemNameActive: { color: c.primary, fontWeight: '700' },
+  check: { fontSize: 16, color: c.primary, fontWeight: '700' },
+});
+
 export function HouseholdSwitcher({ size = 'normal' }: Props) {
   const appUser = useAuthStore((s) => s.appUser);
   const households = useAllHouseholds(appUser?.householdIds ?? []);
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const current = households.find((h) => h.id === appUser?.activeHouseholdId);
   const canSwitch = households.length > 1;
@@ -37,8 +75,6 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
 
   if (!current) return null;
 
-  const emoji = emojiForHouseholdAvatar(current.avatarId);
-
   return (
     <>
       <TouchableOpacity
@@ -47,9 +83,7 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
         activeOpacity={canSwitch ? 0.7 : 1}
         disabled={!canSwitch}
       >
-        <Text style={[styles.triggerEmoji, size === 'large' && styles.triggerEmojiLarge]}>
-          {emoji}
-        </Text>
+        <HouseholdIcon avatarId={current.avatarId} size={size === 'large' ? 36 : 24} />
         <Text
           style={[styles.triggerName, size === 'large' && styles.triggerNameLarge]}
           numberOfLines={1}
@@ -57,7 +91,7 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
           {current.name}
         </Text>
         {switching
-          ? <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 4 }} />
+          ? <ActivityIndicator size="small" color={c.primary} style={{ marginLeft: 4 }} />
           : canSwitch
             ? <Text style={styles.chevron}>▾</Text>
             : null}
@@ -76,7 +110,7 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
                     onPress={() => handleSwitch(h.id)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.itemEmoji}>{emojiForHouseholdAvatar(h.avatarId)}</Text>
+                    <HouseholdIcon avatarId={h.avatarId} size={30} />
                     <Text style={[styles.itemName, isActive && styles.itemNameActive]} numberOfLines={1}>
                       {h.name}
                     </Text>
@@ -91,40 +125,3 @@ export function HouseholdSwitcher({ size = 'normal' }: Props) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  trigger: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: SPACING.sm, paddingVertical: 4,
-    borderRadius: 10, maxWidth: 220,
-  },
-  triggerLarge: { maxWidth: '100%' },
-  triggerEmoji: { fontSize: 18 },
-  triggerEmojiLarge: { fontSize: 28 },
-  triggerName: { fontSize: 17, fontWeight: '700', color: COLORS.text, flexShrink: 1 },
-  triggerNameLarge: { fontSize: 24, fontWeight: '800' },
-  chevron: { fontSize: 13, color: COLORS.textSecondary, marginLeft: 2 },
-
-  overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'flex-start', paddingTop: 100,
-    paddingHorizontal: SPACING.md,
-  },
-  sheet: {
-    backgroundColor: COLORS.white, borderRadius: 16,
-    borderWidth: 1, borderColor: COLORS.border,
-    overflow: 'hidden', maxHeight: 320,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
-  },
-  item: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.md,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  itemActive: { backgroundColor: COLORS.primaryLight },
-  itemEmoji: { fontSize: 22 },
-  itemName: { flex: 1, fontSize: 16, fontWeight: '500', color: COLORS.text },
-  itemNameActive: { color: COLORS.primary, fontWeight: '700' },
-  check: { fontSize: 16, color: COLORS.primary, fontWeight: '700' },
-});
