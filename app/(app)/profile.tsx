@@ -320,6 +320,7 @@ export default function ProfileScreen() {
               mode="time"
               is24Hour
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              textColor={c.text}
               onChange={(_, date) => {
                 setShowTimePicker(Platform.OS === 'ios');
                 if (date) {

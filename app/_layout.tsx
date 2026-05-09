@@ -5,9 +5,9 @@ import { useAuthListener } from '../src/hooks/useAuth';
 import { useAuthStore } from '../src/stores/authStore';
 import '../src/i18n';
 
-// Force light mode — the app has no dark mode design yet (not supported on web)
+// Default to dark mode (not supported on web)
 if (Platform.OS !== 'web') {
-  Appearance.setColorScheme('light');
+  Appearance.setColorScheme('dark');
 }
 
 export default function RootLayout() {

@@ -21,10 +21,12 @@ A cross-platform mobile app (iOS & Android) for managing shared household life. 
 - Resets to today's date whenever you switch to the calendar tab
 
 ### Shopping List
-- Shared household shopping list with categories
-- Bought items move to a virtual "Bought" section at the bottom and disappear after 24 h
-- Drag-and-drop items between categories via a drag handle
-- Dragging a bought item back to a regular category marks it as not bought
+- Shared household shopping list organised by **categories** (primary grouping) and **labels** (coloured dot, secondary grouping)
+- Within each category, items are automatically sub-grouped by label; sub-groups can be reordered via drag-and-drop
+- Dragging an item into a different label sub-group reassigns the item's label; dropping it outside any labelled group removes the label
+- Dragging or adding an item that would create a duplicate (same name, same label, same category — case-insensitive) merges quantities instead
+- Bought items move to a virtual "Bought" section at the bottom and disappear after 24 h; dragging a bought item back marks it as not bought
+- **Shopping templates**: save a named list of items (with quantity and optional label) and apply it to any category in one tap; applying also merges with existing items
 
 ### Push Notifications (local, fires even when app is closed)
 - **Morning summary** — daily push notification at a configurable time (default 07:30) listing all events for the day
@@ -78,7 +80,7 @@ sorted/
 │       ├── (tabs)/
 │       │   ├── (home)/       # Home screen
 │       │   ├── calendar/     # Calendar (month view + day event list)
-│       │   ├── shopping/     # Shopping list with drag-and-drop
+│       │   ├── shopping/     # Shopping list with drag-and-drop and templates
 │       │   └── todos/        # To-Do list & create screens
 │       ├── events/           # Create / edit event screens
 │       ├── household/        # Household settings & setup
@@ -91,6 +93,7 @@ sorted/
 │   │   └── …
 │   ├── services/             # Firebase service layer
 │   │   ├── notifications.ts  # scheduleAllNotifications + registerForPushNotifications
+│   │   ├── shopping.ts       # Shopping items, categories, labels, templates
 │   │   └── …
 │   ├── stores/               # Zustand stores (authStore, householdStore, eventsStore)
 │   ├── types/                # TypeScript types
@@ -110,10 +113,15 @@ sorted/
 
 ### Prerequisites
 
-- Node.js 18+
-- Expo CLI (`npm install -g expo-cli`)
-- EAS CLI (`npm install -g eas-cli`)
-- A Firebase project with **Firestore**, **Authentication (Email/Password)**, **Cloud Messaging**, and **Storage** enabled
+- **Node.js 18+** — [nodejs.org](https://nodejs.org)
+- **EAS CLI** (for building only) — `npm install -g eas-cli`
+- A **Firebase project** with the following services enabled:
+  - Firestore Database
+  - Authentication (Email/Password provider)
+  - Cloud Messaging (FCM)
+  - Storage (only needed for custom profile photo upload)
+
+> You do **not** need to install `expo-cli` globally. All Expo commands are run via `npx expo`.
 
 ### 1 — Clone & install
 
@@ -129,9 +137,9 @@ npm install
 cp .env.example .env
 ```
 
-Fill in your Firebase project values from the Firebase Console → Project Settings → Your apps:
+Open `.env` and fill in your Firebase project credentials. Find them in the Firebase Console under **Project Settings → Your apps → SDK setup and configuration**:
 
-```
+```env
 EXPO_PUBLIC_FIREBASE_API_KEY=...
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
@@ -140,7 +148,7 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 EXPO_PUBLIC_FIREBASE_APP_ID=...
 ```
 
-### 3 — Firestore & security rules
+### 3 — Firestore rules & indexes
 
 ```bash
 firebase deploy --only firestore
@@ -149,30 +157,32 @@ firebase deploy --only firestore
 ### 4 — Cloud Functions
 
 ```bash
-cd functions
-npm install
-cd ..
+cd functions && npm install && cd ..
 firebase deploy --only functions
 ```
 
-### 5 — Run (development)
+### 5 — Run in development
 
 ```bash
-npx expo start --go
+npx expo start
 ```
 
-Scan the QR code with the **Expo Go** app (iOS: use the camera app; Android: use Expo Go directly), or press `i` / `a` for a local simulator.
+- Press **`i`** to open in the iOS Simulator, **`a`** for the Android Emulator.
+- Or scan the QR code with the **Expo Go** app on a physical device (iOS: use the Camera app; Android: open Expo Go directly).
 
-> **Note:** Local push notifications require a physical device. In Expo Go on a real device, the morning summary and pre-event reminders will work. Remote push notifications (FCM) require a development build.
+> **Note:** Local push notifications (morning summary, pre-event reminders) require a physical device. They work in Expo Go on real hardware. Remote push notifications (FCM) require a development or production build via EAS.
 
-### 6 — Build (EAS)
+### 6 — Build with EAS
 
 ```bash
-# iOS simulator build (no Apple Developer account required)
+# iOS simulator build (no Apple Developer account needed)
 eas build -p ios --profile simulator
 
-# iOS development build for a real device (requires Apple Developer account)
+# iOS device build (requires Apple Developer account)
 eas build -p ios --profile development
+
+# Android APK
+eas build -p android --profile development
 ```
 
 ---
@@ -216,11 +226,11 @@ todos/{todoId}
   dueFrom: Timestamp | null
   dueDate: Timestamp | null
   status: 'pending' | 'completed'
+  priority: 'normal' | 'urgent'
   completedAt: Timestamp | null
   completedBy: string | null
   createdBy: string
-  isUrgent: boolean
-  recurrence: 'none' | 'daily' | 'weekly' | 'monthly'
+  recurrence?: { type: 'daily' | 'weekly' | 'monthly', days?, dayOfMonth? }
 
 events/{eventId}
   householdId, title, description?, location?
@@ -229,19 +239,37 @@ events/{eventId}
   allDay: boolean
   color: string
   visibility: 'private' | 'household' | 'contacts' | 'custom'
+  visibleToHouseholds: string[]
+  visibleToUsers: string[]
+  viewerIds: string[]
+  blockerIds: string[]
   assignedTo: string[]
-  createdBy: string
-  isBlocker: boolean
+  authorId: string
+
+shoppingCategories/{categoryId}
+  householdId, name
+  sortOrder: number
+
+shoppingLabels/{labelId}
+  householdId, name, color
+  sortOrder: number
 
 shoppingItems/{itemId}
-  householdId, name, categoryId
+  householdId, name
+  quantity: number
+  categoryId: string | null
+  labelId: string | null
+  labelSortOrder: number        // sort position within its label sub-group
   bought: boolean
   boughtAt: Timestamp | null
   createdBy: string
-  order: number
 
-shoppingCategories/{categoryId}
-  householdId, name, order
+shoppingTemplates/{templateId}
+  householdId, name, createdBy
+  items: [{ name, quantity, labelId? }]
+
+shoppingHistory/{householdId}
+  names: string[]               // autocomplete history for item names
 ```
 
 ---

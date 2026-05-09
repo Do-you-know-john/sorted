@@ -284,6 +284,7 @@ export default function CreateEventScreen() {
               value={startDate}
               mode={datePickerMode}
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              textColor={c.text}
               onChange={(_, date) => {
                 if (Platform.OS !== 'ios') setShowStartPicker(false);
                 if (date) {
@@ -317,6 +318,7 @@ export default function CreateEventScreen() {
                   mode="datetime"
                   minimumDate={startDate}
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  textColor={c.text}
                   onChange={(_, date) => {
                     if (Platform.OS !== 'ios') setShowEndPicker(false);
                     if (date) setEndDate(date);
