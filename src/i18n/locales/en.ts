@@ -62,6 +62,12 @@ export default {
     avatarFailed: 'Failed to update profile picture.',
     avatarUpgradePlan: 'Photo upload requires a paid Firebase plan. Please choose one of the avatars instead.',
     avatarColor: 'Background color',
+    notifications: 'Notifications',
+    notifMorningTime: 'Morning summary time',
+    notifPreEvent: 'Reminder before event',
+    notifMinutes: 'min',
+    notifSaved: 'Notification settings saved.',
+    notifFailed: 'Failed to save notification settings.',
   },
   household: {
     setup: 'Set up your household to get started.',
@@ -211,6 +217,9 @@ export default {
     deleteEvent: 'Delete event',
     edit: 'Edit',
     eventNotFound: 'Event not found.',
+    conflictWarning: 'Scheduling conflict',
+    conflictBusy: 'Busy',
+    conflictMore: 'more',
   },
   shopping: {
     title: 'Shopping List',
@@ -222,5 +231,8 @@ export default {
     emptyList: 'Your shopping list is empty.',
     deleteCategoryTitle: 'Delete category',
     deleteCategoryMessage: 'Delete category "{{name}}"? Items in it will become uncategorized.',
+    bought: 'Bought',
+    showOlderBought: 'Show older',
+    hideOlderBought: 'Hide older',
   },
 } as const;

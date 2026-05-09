@@ -172,17 +172,19 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noTodos')}</Text>
           </View>
         ) : (
-          upcomingTodos.map((todo) => {
-            const h = households.find((hh) => hh.id === todo.householdId);
-            return (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                householdName={h?.name}
-                householdAvatarId={h?.avatarId}
-              />
-            );
-          })
+          <View style={{ gap: SPACING.xs }}>
+            {upcomingTodos.map((todo) => {
+              const h = households.find((hh) => hh.id === todo.householdId);
+              return (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  householdName={h?.name}
+                  householdAvatarId={h?.avatarId}
+                />
+              );
+            })}
+          </View>
         ))}
 
         {/* Recently completed */}
@@ -197,17 +199,19 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t('home.noRecentlyCompleted')}</Text>
           </View>
         ) : (
-          recentlyCompletedTodos.map((todo) => {
-            const h = households.find((hh) => hh.id === todo.householdId);
-            return (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                householdName={h?.name}
-                householdAvatarId={h?.avatarId}
-              />
-            );
-          })
+          <View style={{ gap: SPACING.xs }}>
+            {recentlyCompletedTodos.map((todo) => {
+              const h = households.find((hh) => hh.id === todo.householdId);
+              return (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  householdName={h?.name}
+                  householdAvatarId={h?.avatarId}
+                />
+              );
+            })}
+          </View>
         ))}
 
         <TouchableOpacity

@@ -89,6 +89,9 @@ export interface AppUser {
   photoURL?: string | null;
   avatarColor?: string | null;
   themePreference?: ThemePreference;
+  notificationMorningHour?: number;
+  notificationMorningMinute?: number;
+  notificationPreEventMinutes?: number;
 }
 
 export type EventVisibility = 'private' | 'household' | 'contacts' | 'custom';

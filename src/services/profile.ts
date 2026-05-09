@@ -23,3 +23,17 @@ export async function changePassword(currentPassword: string, newPassword: strin
   await reauthenticateWithCredential(user, credential);
   await updatePassword(user, newPassword);
 }
+
+export async function updateNotificationPrefs(
+  morningHour: number,
+  morningMinute: number,
+  preEventMinutes: number,
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not logged in.');
+  await updateDoc(doc(db, 'users', user.uid), {
+    notificationMorningHour: morningHour,
+    notificationMorningMinute: morningMinute,
+    notificationPreEventMinutes: preEventMinutes,
+  });
+}

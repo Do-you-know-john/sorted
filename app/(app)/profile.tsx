@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
-import { updateDisplayName, changePassword, updateThemePreference } from '../../src/services/profile';
+import { updateDisplayName, changePassword, updateThemePreference, updateNotificationPrefs } from '../../src/services/profile';
 import { updatePresetAvatar, pickAndUploadAvatarPhoto, removeAvatar, updateAvatarColor } from '../../src/services/avatar';
 import { logout } from '../../src/services/auth';
 import { TextInput } from '../../src/components/ui/TextInput';
@@ -37,6 +38,14 @@ export default function ProfileScreen() {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarSuccess, setAvatarSuccess] = useState(false);
   const [avatarError, setAvatarError] = useState('');
+
+  const [morningHour, setMorningHour] = useState(appUser?.notificationMorningHour ?? 7);
+  const [morningMinute, setMorningMinute] = useState(appUser?.notificationMorningMinute ?? 30);
+  const [preEventMinutes, setPreEventMinutes] = useState(appUser?.notificationPreEventMinutes ?? 30);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifSuccess, setNotifSuccess] = useState(false);
+  const [notifError, setNotifError] = useState('');
 
   async function handleSaveName() {
     if (!displayName.trim()) return;
@@ -130,6 +139,20 @@ export default function ProfileScreen() {
       setAvatarError(t('profile.avatarFailed'));
     } finally {
       setAvatarLoading(false);
+    }
+  }
+
+  async function handleSaveNotifPrefs() {
+    setNotifError('');
+    setNotifSuccess(false);
+    setNotifLoading(true);
+    try {
+      await updateNotificationPrefs(morningHour, morningMinute, preEventMinutes);
+      setNotifSuccess(true);
+    } catch (e: any) {
+      setNotifError(e.message ?? t('profile.notifFailed'));
+    } finally {
+      setNotifLoading(false);
     }
   }
 
@@ -282,6 +305,51 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Notifications */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('profile.notifications')}</Text>
+          <Text style={styles.settingLabel}>{t('profile.notifMorningTime')}</Text>
+          <TouchableOpacity style={styles.timeBtn} onPress={() => setShowTimePicker(true)}>
+            <Text style={styles.timeBtnText}>
+              {String(morningHour).padStart(2, '0')}:{String(morningMinute).padStart(2, '0')}
+            </Text>
+          </TouchableOpacity>
+          {showTimePicker && (
+            <DateTimePicker
+              value={(() => { const d = new Date(); d.setHours(morningHour, morningMinute, 0, 0); return d; })()}
+              mode="time"
+              is24Hour
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(_, date) => {
+                setShowTimePicker(Platform.OS === 'ios');
+                if (date) {
+                  setMorningHour(date.getHours());
+                  setMorningMinute(date.getMinutes());
+                }
+              }}
+            />
+          )}
+          <Text style={[styles.settingLabel, { marginTop: SPACING.xs }]}>{t('profile.notifPreEvent')}</Text>
+          <View style={styles.stepperRow}>
+            <TouchableOpacity
+              style={styles.stepperBtn}
+              onPress={() => setPreEventMinutes((m) => Math.max(5, m - 5))}
+            >
+              <Text style={styles.stepperBtnText}>−</Text>
+            </TouchableOpacity>
+            <Text style={styles.stepperValue}>{preEventMinutes} {t('profile.notifMinutes')}</Text>
+            <TouchableOpacity
+              style={styles.stepperBtn}
+              onPress={() => setPreEventMinutes((m) => Math.min(120, m + 5))}
+            >
+              <Text style={styles.stepperBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
+          {notifError ? <Text style={styles.error}>{notifError}</Text> : null}
+          {notifSuccess ? <Text style={styles.success}>{t('profile.notifSaved')}</Text> : null}
+          <Button label={t('common.save')} onPress={handleSaveNotifPrefs} loading={notifLoading} />
+        </View>
+
         <Button label={t('auth.logout')} onPress={handleLogout} variant="danger" />
       </ScrollView>
     </SafeAreaView>
@@ -379,4 +447,19 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   langBtnActive: { backgroundColor: c.primary, borderColor: c.primary },
   langBtnText: { fontSize: 15, fontWeight: '600', color: c.textSecondary },
   langBtnTextActive: { color: c.white },
+  settingLabel: { fontSize: 13, color: c.textSecondary, marginBottom: 4 },
+  timeBtn: {
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md,
+    alignSelf: 'flex-start', backgroundColor: c.background,
+  },
+  timeBtnText: { fontSize: 20, fontWeight: '600', color: c.text, letterSpacing: 1 },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  stepperBtn: {
+    width: 40, height: 40, borderRadius: 10,
+    backgroundColor: c.background, borderWidth: 1, borderColor: c.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  stepperBtnText: { fontSize: 22, fontWeight: '600', color: c.text },
+  stepperValue: { fontSize: 16, fontWeight: '600', color: c.text, minWidth: 80, textAlign: 'center' },
 });

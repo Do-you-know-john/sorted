@@ -62,6 +62,12 @@ export default {
     avatarFailed: 'Profilbild konnte nicht aktualisiert werden.',
     avatarUpgradePlan: 'Für den Foto-Upload ist ein kostenpflichtiger Firebase-Plan erforderlich. Bitte wähle stattdessen einen der Avatare.',
     avatarColor: 'Hintergrundfarbe',
+    notifications: 'Benachrichtigungen',
+    notifMorningTime: 'Uhrzeit Morgenzusammenfassung',
+    notifPreEvent: 'Erinnerung vor Termin',
+    notifMinutes: 'Min.',
+    notifSaved: 'Benachrichtigungseinstellungen gespeichert.',
+    notifFailed: 'Benachrichtigungseinstellungen konnten nicht gespeichert werden.',
   },
   household: {
     setup: 'Richte deinen Haushalt ein, um loszulegen.',
@@ -211,6 +217,9 @@ export default {
     deleteEvent: 'Termin löschen',
     edit: 'Bearbeiten',
     eventNotFound: 'Termin nicht gefunden.',
+    conflictWarning: 'Terminüberschneidung',
+    conflictBusy: 'Beschäftigt',
+    conflictMore: 'weitere',
   },
   shopping: {
     title: 'Einkaufsliste',
@@ -222,5 +231,8 @@ export default {
     emptyList: 'Die Einkaufsliste ist leer.',
     deleteCategoryTitle: 'Kategorie löschen',
     deleteCategoryMessage: 'Kategorie "{{name}}" löschen? Artikel darin werden zu Sonstiges.',
+    bought: 'Gekauft',
+    showOlderBought: 'Ältere anzeigen',
+    hideOlderBought: 'Ältere ausblenden',
   },
 } as const;

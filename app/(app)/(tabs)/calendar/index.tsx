@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -39,11 +39,12 @@ interface MonthGridProps {
   currentMonth: Date;
   selectedDay: Date;
   events: CalendarEventView[];
+  conflictDays: Set<string>;
   onSelectDay: (day: Date) => void;
   c: Colors;
 }
 
-function MonthGrid({ currentMonth, selectedDay, events, onSelectDay, c }: MonthGridProps) {
+function MonthGrid({ currentMonth, selectedDay, events, conflictDays, onSelectDay, c }: MonthGridProps) {
   const days = eachDayOfInterval({
     start: startOfMonth(currentMonth),
     end: endOfMonth(currentMonth),
@@ -57,7 +58,7 @@ function MonthGrid({ currentMonth, selectedDay, events, onSelectDay, c }: MonthG
   while (cells.length % 7 !== 0) cells.push(null);
 
   const eventsByDay = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>();
+    const map = new Map<string, CalendarEventView[]>();
     events.forEach((e) => {
       const key = format(e.startDate.toDate(), 'yyyy-MM-dd');
       if (!map.has(key)) map.set(key, []);
@@ -106,6 +107,9 @@ function MonthGrid({ currentMonth, selectedDay, events, onSelectDay, c }: MonthG
                     />
                   ))}
                 </View>
+                {conflictDays.has(key) && (
+                  <Text style={styles.conflictMark}>!</Text>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -154,6 +158,15 @@ const makeGridStyles = (c: Colors) => StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
+  },
+  conflictMark: {
+    position: 'absolute',
+    top: 1,
+    right: 0,
+    fontSize: 12,
+    fontWeight: '900',
+    color: c.warning,
+    lineHeight: 14,
   },
 });
 
@@ -336,6 +349,14 @@ export default function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState(() => startOfDay(new Date()));
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const today = startOfDay(new Date());
+      setSelectedDay(today);
+      setCurrentMonth(startOfMonth(today));
+    }, []),
+  );
+
   const router = useRouter();
   const { t } = useTranslation();
   const c = useTheme();
@@ -381,6 +402,50 @@ export default function CalendarScreen() {
       .filter((e) => isSameDay(e.startDate.toDate(), selectedDay))
       .sort((a, b) => a.startDate.toDate().getTime() - b.startDate.toDate().getTime());
   }, [filteredMonthEvents, selectedDay]);
+
+  // Days in the current month view that have overlapping non-blocker events
+  const conflictDays = useMemo(() => {
+    const keys = new Set<string>();
+    const byDay = new Map<string, CalendarEventView[]>();
+    filteredMonthEvents.forEach((e) => {
+      if (e.allDay || e.isBlocker) return;
+      const key = format(e.startDate.toDate(), 'yyyy-MM-dd');
+      if (!byDay.has(key)) byDay.set(key, []);
+      byDay.get(key)!.push(e);
+    });
+    byDay.forEach((evs, key) => {
+      outer: for (let i = 0; i < evs.length; i++) {
+        for (let j = i + 1; j < evs.length; j++) {
+          if (
+            evs[i].startDate.toMillis() < evs[j].endDate.toMillis() &&
+            evs[j].startDate.toMillis() < evs[i].endDate.toMillis()
+          ) {
+            keys.add(key);
+            break outer;
+          }
+        }
+      }
+    });
+    return keys;
+  }, [filteredMonthEvents]);
+
+  // IDs of events on the selected day that overlap with at least one other event
+  const overlappingDayEventIds = useMemo(() => {
+    const nonAllDay = dayEvents.filter((e) => !e.allDay && !e.isBlocker);
+    const ids = new Set<string>();
+    for (let i = 0; i < nonAllDay.length; i++) {
+      for (let j = i + 1; j < nonAllDay.length; j++) {
+        if (
+          nonAllDay[i].startDate.toMillis() < nonAllDay[j].endDate.toMillis() &&
+          nonAllDay[j].startDate.toMillis() < nonAllDay[i].endDate.toMillis()
+        ) {
+          ids.add(nonAllDay[i].id);
+          ids.add(nonAllDay[j].id);
+        }
+      }
+    }
+    return ids;
+  }, [dayEvents]);
 
   const togglePerson = useCallback((personId: string) => {
     setSelectedPersonIds((prev) =>
@@ -433,6 +498,7 @@ export default function CalendarScreen() {
           currentMonth={currentMonth}
           selectedDay={selectedDay}
           events={filteredMonthEvents}
+          conflictDays={conflictDays}
           onSelectDay={setSelectedDay}
           c={c}
         />
@@ -465,6 +531,7 @@ export default function CalendarScreen() {
               <EventCard
                 key={event.id}
                 event={event}
+                hasConflict={overlappingDayEventIds.has(event.id)}
                 onPress={() => router.push(`/(app)/events/${event.id}` as any)}
               />
             ),
@@ -476,7 +543,7 @@ export default function CalendarScreen() {
 
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/(app)/events/create' as any)}
+        onPress={() => router.push(`/(app)/events/create?date=${selectedDay.toISOString()}` as any)}
         activeOpacity={0.85}
       >
         <Text style={styles.fabText}>+</Text>

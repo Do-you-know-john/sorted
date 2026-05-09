@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Alert,
   ActivityIndicator,
   Keyboard,
+  PanResponder,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -33,9 +35,18 @@ import {
   updateItemQuantity,
   deleteItem,
   getHistory,
+  updateItemCategory,
+  markItemNotBought,
 } from '../../../../src/services/shopping';
 
 const UNCATEGORIZED_ID = '__none__';
+const BOUGHT_SECTION_ID = '__bought__';
+
+type DragRefs = {
+  startDragRef: React.RefObject<(item: ShoppingItem, fromSection: string, pageX: number, pageY: number) => void>;
+  moveDragRef: React.RefObject<(pageX: number, pageY: number) => void>;
+  endDragRef: React.RefObject<() => void>;
+};
 
 export default function ShoppingScreen() {
   const { t } = useTranslation();
@@ -48,6 +59,7 @@ export default function ShoppingScreen() {
   const [categories, setCategories] = useState<ShoppingCategory[]>([]);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [history, setHistory] = useState<string[]>([]);
+  const [showAllBought, setShowAllBought] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -65,13 +77,83 @@ export default function ShoppingScreen() {
   const [editingCat, setEditingCat] = useState<ShoppingCategory | null>(null);
   const [editCatName, setEditCatName] = useState('');
 
+  // DnD state
+  const [draggingItem, setDraggingItem] = useState<ShoppingItem | null>(null);
+  const [dropTargetSection, setDropTargetSection] = useState<string | null>(null);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const ghostY = useRef(new Animated.Value(0)).current;
+
+  // DnD mutable refs
+  const draggingItemRef = useRef<ShoppingItem | null>(null);
+  const draggingFromSectionRef = useRef<string | null>(null);
+  const dropTargetSectionRef = useRef<string | null>(null);
+  const scrollOffsetRef = useRef(0);
+  const containerTopRef = useRef(0);
+  const sectionLayoutsRef = useRef<Map<string, { y: number; height: number }>>(new Map());
+  const containerRef = useRef<View>(null);
+
+  // DnD callback refs — updated every render so PanResponders always call the latest version
+  const startDragRef = useRef<(item: ShoppingItem, fromSection: string, pageX: number, pageY: number) => void>(() => {});
+  const moveDragRef = useRef<(pageX: number, pageY: number) => void>(() => {});
+  const endDragRef = useRef<() => void>(() => {});
+
+  startDragRef.current = (item, fromSection, _pageX, pageY) => {
+    draggingItemRef.current = item;
+    draggingFromSectionRef.current = fromSection;
+    dropTargetSectionRef.current = null;
+    ghostY.setValue(pageY - containerTopRef.current - 24);
+    setDraggingItem(item);
+    setDropTargetSection(null);
+    setScrollEnabled(false);
+  };
+
+  moveDragRef.current = (_pageX, pageY) => {
+    const relY = pageY - containerTopRef.current;
+    ghostY.setValue(relY - 24);
+    const contentY = relY + scrollOffsetRef.current;
+    let newTarget: string | null = null;
+    sectionLayoutsRef.current.forEach((layout, sectionId) => {
+      if (contentY >= layout.y && contentY <= layout.y + layout.height) {
+        newTarget = sectionId;
+      }
+    });
+    if (newTarget !== dropTargetSectionRef.current) {
+      dropTargetSectionRef.current = newTarget;
+      setDropTargetSection(newTarget);
+    }
+  };
+
+  endDragRef.current = () => {
+    const item = draggingItemRef.current;
+    const fromSection = draggingFromSectionRef.current;
+    const toSection = dropTargetSectionRef.current;
+
+    draggingItemRef.current = null;
+    draggingFromSectionRef.current = null;
+    dropTargetSectionRef.current = null;
+    setDraggingItem(null);
+    setDropTargetSection(null);
+    setScrollEnabled(true);
+
+    if (!item || !toSection || toSection === fromSection || toSection === BOUGHT_SECTION_ID) return;
+
+    const catId = toSection === UNCATEGORIZED_ID ? null : toSection;
+    if (fromSection === BOUGHT_SECTION_ID) {
+      markItemNotBought(item.id, catId);
+    } else {
+      updateItemCategory(item.id, catId);
+    }
+  };
+
+  const dragRefs: DragRefs = { startDragRef, moveDragRef, endDragRef };
+
   useEffect(() => {
     if (!householdId) return;
     const unsub1 = subscribeCategories(householdId, setCategories);
-    const unsub2 = subscribeItems(householdId, setItems);
+    const unsub2 = subscribeItems(householdId, setItems, showAllBought);
     getHistory(householdId).then(setHistory);
     return () => { unsub1(); unsub2(); };
-  }, [householdId]);
+  }, [householdId, showAllBought]);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
@@ -107,14 +189,6 @@ export default function ShoppingScreen() {
     }
   }
 
-  async function handleToggle(item: ShoppingItem) {
-    await toggleItemBought(item);
-  }
-
-  async function handleDelete(item: ShoppingItem) {
-    await deleteItem(item.id);
-  }
-
   async function handleCreateCategory() {
     const name = newCatName.trim();
     if (!name || !householdId) return;
@@ -128,11 +202,7 @@ export default function ShoppingScreen() {
       t('shopping.deleteCategoryMessage', { name: cat.name }),
       [
         { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: () => deleteCategory(cat.id),
-        },
+        { text: t('common.delete'), style: 'destructive', onPress: () => deleteCategory(cat.id) },
       ]
     );
   }
@@ -146,21 +216,43 @@ export default function ShoppingScreen() {
 
   const selectedCatName = selectedCategoryId === UNCATEGORIZED_ID || !selectedCategoryId
     ? t('shopping.noCategory')
-    : categories.find((c) => c.id === selectedCategoryId)?.name ?? t('shopping.noCategory');
+    : categories.find((cat) => cat.id === selectedCategoryId)?.name ?? t('shopping.noCategory');
 
-  // Group items by category
-  const itemsByCategory: Record<string, ShoppingItem[]> = {};
-  items.forEach((item) => {
-    const key = item.categoryId ?? UNCATEGORIZED_ID;
-    if (!itemsByCategory[key]) itemsByCategory[key] = [];
-    itemsByCategory[key].push(item);
-  });
+  // Split items
+  const { boughtItems, nonBoughtItems } = useMemo(() => {
+    const bought: ShoppingItem[] = [];
+    const nonBought: ShoppingItem[] = [];
+    items.forEach((item) => {
+      if (item.bought) bought.push(item);
+      else nonBought.push(item);
+    });
+    return { boughtItems: bought, nonBoughtItems: nonBought };
+  }, [items]);
 
-  // Sections: known categories in order, then uncategorized
-  const sections: { id: string; name: string }[] = [
-    ...categories.map((c) => ({ id: c.id, name: c.name })),
-    { id: UNCATEGORIZED_ID, name: t('shopping.noCategory') },
-  ].filter((s) => (itemsByCategory[s.id]?.length ?? 0) > 0);
+  // Group non-bought items by category
+  const nonBoughtByCategory = useMemo(() => {
+    const map: Record<string, ShoppingItem[]> = {};
+    nonBoughtItems.forEach((item) => {
+      const key = item.categoryId ?? UNCATEGORIZED_ID;
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
+    });
+    return map;
+  }, [nonBoughtItems]);
+
+  const sections: { id: string; name: string }[] = useMemo(() => {
+    const regular = [
+      ...categories.map((cat) => ({ id: cat.id, name: cat.name })),
+      { id: UNCATEGORIZED_ID, name: t('shopping.noCategory') },
+    ].filter((s) => (nonBoughtByCategory[s.id]?.length ?? 0) > 0);
+
+    if (boughtItems.length > 0) {
+      regular.push({ id: BOUGHT_SECTION_ID, name: t('shopping.bought') });
+    }
+    return regular;
+  }, [categories, nonBoughtByCategory, boughtItems.length, t]);
+
+  const isEmpty = sections.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -175,35 +267,96 @@ export default function ShoppingScreen() {
         <AvatarButton />
       </View>
 
-      {/* Item list */}
-      <ScrollView contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
-        {sections.length === 0 && (
-          <Text style={styles.emptyText}>{t('shopping.emptyList')}</Text>
+      {/* Content area with ghost overlay */}
+      <View
+        ref={containerRef}
+        style={{ flex: 1 }}
+        onLayout={() => {
+          containerRef.current?.measure((_x, _y, _w, _h, _px, pageY) => {
+            containerTopRef.current = pageY;
+          });
+        }}
+      >
+        <ScrollView
+          scrollEnabled={scrollEnabled}
+          onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+          scrollEventThrottle={16}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {isEmpty && (
+            <Text style={styles.emptyText}>{t('shopping.emptyList')}</Text>
+          )}
+          {sections.map((section) => {
+            const isBoughtSection = section.id === BOUGHT_SECTION_ID;
+            const sectionItems = isBoughtSection
+              ? boughtItems
+              : (nonBoughtByCategory[section.id] ?? []);
+            const isOpen = collapsed[section.id] !== true;
+            const isDropTarget = dropTargetSection === section.id && section.id !== BOUGHT_SECTION_ID;
+
+            return (
+              <View
+                key={section.id}
+                style={styles.section}
+                onLayout={(e) => {
+                  sectionLayoutsRef.current.set(section.id, {
+                    y: e.nativeEvent.layout.y,
+                    height: e.nativeEvent.layout.height,
+                  });
+                }}
+              >
+                <TouchableOpacity
+                  style={[styles.sectionHeader, isDropTarget && styles.sectionHeaderDrop]}
+                  onPress={() => toggleCollapse(section.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.chevron}>{isOpen ? '▼' : '▶'}</Text>
+                  <Text style={[styles.sectionTitle, isBoughtSection && styles.sectionTitleBought]}>
+                    {section.name}
+                  </Text>
+                  <Text style={styles.sectionCount}>({sectionItems.length})</Text>
+                  {isBoughtSection && (
+                    <TouchableOpacity
+                      onPress={() => setShowAllBought((v) => !v)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.showOlderBtn}>
+                        {showAllBought ? t('shopping.hideOlderBought') : t('shopping.showOlderBought')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+
+                {isOpen && sectionItems.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    fromSection={section.id}
+                    dragRefs={dragRefs}
+                    isDragging={draggingItem?.id === item.id}
+                    onToggle={() => toggleItemBought(item)}
+                    onDelete={() => deleteItem(item.id)}
+                    onQuantityChange={(qty) => updateItemQuantity(item.id, qty)}
+                    canDelete={item.createdBy === uid}
+                  />
+                ))}
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        {/* DnD ghost overlay */}
+        {draggingItem && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.ghost, { transform: [{ translateY: ghostY }] }]}
+          >
+            <Text style={styles.ghostText} numberOfLines={1}>{draggingItem.name}</Text>
+          </Animated.View>
         )}
-        {sections.map((section) => {
-          const sectionItems = itemsByCategory[section.id] ?? [];
-          const isOpen = collapsed[section.id] !== true;
-          return (
-            <View key={section.id} style={styles.section}>
-              <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleCollapse(section.id)} activeOpacity={0.7}>
-                <Text style={styles.chevron}>{isOpen ? '▼' : '▶'}</Text>
-                <Text style={styles.sectionTitle}>{section.name}</Text>
-                <Text style={styles.sectionCount}>({sectionItems.length})</Text>
-              </TouchableOpacity>
-              {isOpen && sectionItems.map((item) => (
-                <ItemRow
-                  key={item.id}
-                  item={item}
-                  onToggle={() => handleToggle(item)}
-                  onDelete={() => handleDelete(item)}
-                  onQuantityChange={(qty) => updateItemQuantity(item.id, qty)}
-                  canDelete={item.createdBy === uid}
-                />
-              ))}
-            </View>
-          );
-        })}
-      </ScrollView>
+      </View>
 
       {/* Suggestions */}
       {suggestions.length > 0 && (
@@ -220,10 +373,14 @@ export default function ShoppingScreen() {
         </View>
       )}
 
-      {/* Category picker dropdown — floats above the add bar */}
+      {/* Category picker dropdown */}
       {showCategoryPicker && (
         <>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setShowCategoryPicker(false)} />
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowCategoryPicker(false)}
+          />
           <View style={[styles.categoryDropdown, { bottom: 68 + keyboardHeight }]}>
             <TouchableOpacity
               style={styles.catOption}
@@ -264,7 +421,11 @@ export default function ShoppingScreen() {
             onSubmitEditing={handleAddItem}
           />
           <QuantityStepper value={inputQty} onChange={setInputQty} />
-          <TouchableOpacity style={styles.addButton} onPress={handleAddItem} disabled={loading || !inputText.trim()}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddItem}
+            disabled={loading || !inputText.trim()}
+          >
             {loading
               ? <ActivityIndicator color={c.white} size="small" />
               : <Text style={styles.addButtonText}>+</Text>
@@ -273,9 +434,18 @@ export default function ShoppingScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Category manager modal — centered dialog */}
-      <Modal visible={showCategoryManager} transparent animationType="fade" onRequestClose={() => setShowCategoryManager(false)}>
-        <TouchableOpacity style={styles.managerOverlay} activeOpacity={1} onPress={() => setShowCategoryManager(false)}>
+      {/* Category manager modal */}
+      <Modal
+        visible={showCategoryManager}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCategoryManager(false)}
+      >
+        <TouchableOpacity
+          style={styles.managerOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCategoryManager(false)}
+        >
           <View style={styles.managerDialog}>
             <Text style={styles.sheetTitle}>{t('shopping.manageCategories')}</Text>
             <ScrollView keyboardShouldPersistTaps="handled">
@@ -296,7 +466,10 @@ export default function ShoppingScreen() {
                     </>
                   ) : (
                     <>
-                      <TouchableOpacity onPress={() => { setEditingCat(cat); setEditCatName(cat.name); }} style={{ flex: 1 }}>
+                      <TouchableOpacity
+                        onPress={() => { setEditingCat(cat); setEditCatName(cat.name); }}
+                        style={{ flex: 1 }}
+                      >
                         <Text style={styles.catManagerName}>{cat.name}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleDeleteCategory(cat)}>
@@ -306,7 +479,6 @@ export default function ShoppingScreen() {
                   )}
                 </View>
               ))}
-              {/* New category input */}
               <View style={styles.newCatRow}>
                 <TextInput
                   style={styles.catEditInput}
@@ -325,15 +497,24 @@ export default function ShoppingScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-
     </SafeAreaView>
   );
 }
 
 function ItemRow({
-  item, onToggle, onDelete, onQuantityChange, canDelete,
+  item,
+  fromSection,
+  dragRefs,
+  isDragging,
+  onToggle,
+  onDelete,
+  onQuantityChange,
+  canDelete,
 }: {
   item: ShoppingItem;
+  fromSection: string;
+  dragRefs: DragRefs;
+  isDragging: boolean;
   onToggle: () => void;
   onDelete: () => void;
   onQuantityChange: (qty: number) => void;
@@ -341,16 +522,59 @@ function ItemRow({
 }) {
   const c = useTheme();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const locked = item.bought;
+
+  // Keep fresh refs to avoid stale closures in the static PanResponder
+  const itemRef = useRef(item);
+  itemRef.current = item;
+  const fromSectionRef = useRef(fromSection);
+  fromSectionRef.current = fromSection;
+
+  const isDragStarted = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        isDragStarted.current = false;
+      },
+      onPanResponderMove: (e) => {
+        const { pageX, pageY } = e.nativeEvent;
+        if (!isDragStarted.current) {
+          isDragStarted.current = true;
+          dragRefs.startDragRef.current(itemRef.current, fromSectionRef.current, pageX, pageY);
+          return;
+        }
+        dragRefs.moveDragRef.current(pageX, pageY);
+      },
+      onPanResponderRelease: () => {
+        if (isDragStarted.current) {
+          isDragStarted.current = false;
+          dragRefs.endDragRef.current();
+        }
+      },
+      onPanResponderTerminate: () => {
+        if (isDragStarted.current) {
+          isDragStarted.current = false;
+          dragRefs.endDragRef.current();
+        }
+      },
+    })
+  ).current;
+
   return (
-    <View style={[styles.itemRow, locked && styles.itemRowBought]}>
+    <View style={[styles.itemRow, item.bought && styles.itemRowBought, isDragging && styles.itemRowDragging]}>
+      <View {...panResponder.panHandlers} style={styles.dragHandle} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+        <Text style={styles.dragHandleText}>⠿</Text>
+      </View>
       <TouchableOpacity onPress={onToggle} style={styles.checkbox}>
-        {locked && <Text style={styles.checkmark}>✓</Text>}
+        {item.bought && <Text style={styles.checkmark}>✓</Text>}
       </TouchableOpacity>
-      <Text style={[styles.itemName, locked && styles.itemNameBought]} numberOfLines={1}>
+      <Text style={[styles.itemName, item.bought && styles.itemNameBought]} numberOfLines={1}>
         {item.name}
       </Text>
-      <QuantityStepper value={item.quantity ?? 1} onChange={onQuantityChange} disabled={locked} />
+      {!item.bought && (
+        <QuantityStepper value={item.quantity ?? 1} onChange={onQuantityChange} />
+      )}
       {canDelete && (
         <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
           <Text style={styles.deleteBtnText}>×</Text>
@@ -360,7 +584,15 @@ function ItemRow({
   );
 }
 
-function QuantityStepper({ value, onChange, disabled = false }: { value: number; onChange: (n: number) => void; disabled?: boolean }) {
+function QuantityStepper({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  disabled?: boolean;
+}) {
   const c = useTheme();
   const styles = useMemo(() => makeStyles(c), [c]);
   return (
@@ -403,21 +635,35 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   section: { gap: 2 },
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.sm, paddingHorizontal: SPACING.xs,
+    borderRadius: 8,
+  },
+  sectionHeaderDrop: {
+    backgroundColor: c.primary + '20',
+    borderWidth: 1.5,
+    borderColor: c.primary,
   },
   chevron: { fontSize: 12, color: c.textSecondary },
   sectionTitle: { fontSize: 14, fontWeight: '700', color: c.text, flex: 1 },
+  sectionTitleBought: { color: c.textSecondary },
   sectionCount: { fontSize: 12, color: c.textSecondary },
+  showOlderBtn: { fontSize: 12, color: c.primary, fontWeight: '500' },
   itemRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     backgroundColor: c.card, borderRadius: 8, paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md, marginBottom: 2,
   },
   itemRowBought: { opacity: 0.45 },
+  itemRowDragging: { opacity: 0.25 },
+  dragHandle: {
+    paddingRight: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dragHandleText: { fontSize: 16, color: c.textSecondary, lineHeight: 20 },
   checkbox: {
     width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: c.primary,
-    justifyContent: 'center', alignItems: 'center',
-    backgroundColor: c.card,
+    justifyContent: 'center', alignItems: 'center', backgroundColor: c.card,
   },
   checkmark: { color: c.primary, fontSize: 13, fontWeight: '700' },
   itemName: { flex: 1, fontSize: 15, color: c.text },
@@ -435,6 +681,23 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   },
   stepBtnText: { fontSize: 16, color: c.primary, fontWeight: '600', lineHeight: 20 },
   stepValue: { minWidth: 22, textAlign: 'center', fontSize: 13, fontWeight: '600', color: c.text },
+  ghost: {
+    position: 'absolute',
+    top: 0,
+    left: SPACING.md,
+    right: SPACING.md,
+    backgroundColor: c.card,
+    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    zIndex: 50,
+  },
+  ghostText: { fontSize: 15, fontWeight: '600', color: c.text },
   suggestionsBox: {
     position: 'absolute', left: SPACING.md, right: SPACING.md, bottom: 72,
     backgroundColor: c.card, borderRadius: 10,
@@ -442,7 +705,10 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, elevation: 4,
     zIndex: 10,
   },
-  suggestionItem: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: c.border },
+  suggestionItem: {
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    borderBottomWidth: 1, borderBottomColor: c.border,
+  },
   suggestionText: { fontSize: 14, color: c.text },
   addBar: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
@@ -451,20 +717,17 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   },
   categoryPill: {
     paddingHorizontal: SPACING.sm, paddingVertical: 6,
-    borderRadius: 16, borderWidth: 1, borderColor: c.primary,
-    maxWidth: 100,
+    borderRadius: 16, borderWidth: 1, borderColor: c.primary, maxWidth: 100,
   },
   categoryPillText: { fontSize: 12, color: c.primary, fontWeight: '600' },
   addInput: {
     flex: 1, fontSize: 15, color: c.text,
     paddingVertical: SPACING.sm, paddingHorizontal: SPACING.sm,
-    backgroundColor: c.background, borderRadius: 8,
-    borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.background, borderRadius: 8, borderWidth: 1, borderColor: c.border,
   },
   addButton: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: c.primary,
-    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center',
   },
   addButtonText: { color: c.white, fontSize: 24, lineHeight: 28, fontWeight: '600' },
   categoryDropdown: {
@@ -473,18 +736,23 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     backgroundColor: c.card, borderRadius: 10,
     borderWidth: 1, borderColor: c.border,
     shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 8,
-    zIndex: 20,
-    overflow: 'hidden',
+    zIndex: 20, overflow: 'hidden',
   },
-  managerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: SPACING.md },
+  catOption: {
+    paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1, borderBottomColor: c.border,
+  },
+  catOptionText: { fontSize: 15, color: c.text },
+  catOptionActive: { color: c.primary, fontWeight: '700' },
+  managerOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center', paddingHorizontal: SPACING.md,
+  },
   managerDialog: {
     backgroundColor: c.card, borderRadius: 16,
     padding: SPACING.md, gap: SPACING.sm, maxHeight: '75%',
   },
   sheetTitle: { fontSize: 16, fontWeight: '700', color: c.text, marginBottom: SPACING.xs },
-  catOption: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, borderBottomWidth: 1, borderBottomColor: c.border },
-  catOptionText: { fontSize: 15, color: c.text },
-  catOptionActive: { color: c.primary, fontWeight: '700' },
   catManagerRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: c.border,

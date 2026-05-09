@@ -57,7 +57,8 @@ export async function updateCategoryName(categoryId: string, name: string): Prom
 
 export function subscribeItems(
   householdId: string,
-  callback: (items: ShoppingItem[]) => void
+  callback: (items: ShoppingItem[]) => void,
+  includeOldBought = false,
 ): () => void {
   const q = query(
     collection(db, 'shoppingItems'),
@@ -68,7 +69,7 @@ export function subscribeItems(
     const items: ShoppingItem[] = [];
     snap.docs.forEach((d) => {
       const item = { id: d.id, ...d.data() } as ShoppingItem;
-      if (item.bought && item.boughtAt) {
+      if (item.bought && item.boughtAt && !includeOldBought) {
         if (now - item.boughtAt.toMillis() > 24 * 60 * 60 * 1000) return;
       }
       items.push(item);
@@ -80,6 +81,14 @@ export function subscribeItems(
     });
     callback(items);
   });
+}
+
+export async function updateItemCategory(itemId: string, categoryId: string | null): Promise<void> {
+  await updateDoc(doc(db, 'shoppingItems', itemId), { categoryId });
+}
+
+export async function markItemNotBought(itemId: string, categoryId: string | null): Promise<void> {
+  await updateDoc(doc(db, 'shoppingItems', itemId), { bought: false, boughtAt: null, categoryId });
 }
 
 export async function addItem(

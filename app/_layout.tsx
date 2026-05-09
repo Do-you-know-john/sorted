@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
-import { Appearance } from 'react-native';
+import { Appearance, Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuthListener } from '../src/hooks/useAuth';
 import { useAuthStore } from '../src/stores/authStore';
 import '../src/i18n';
 
-// Force light mode — the app has no dark mode design yet
-Appearance.setColorScheme('light');
+// Force light mode — the app has no dark mode design yet (not supported on web)
+if (Platform.OS !== 'web') {
+  Appearance.setColorScheme('light');
+}
 
 export default function RootLayout() {
   useAuthListener();
