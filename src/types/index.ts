@@ -90,3 +90,30 @@ export interface AppUser {
   avatarColor?: string | null;
   themePreference?: ThemePreference;
 }
+
+export type EventVisibility = 'private' | 'household' | 'contacts' | 'custom';
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startDate: Timestamp;
+  endDate: Timestamp;
+  allDay: boolean;
+  authorId: string;
+  householdId: string;
+  assignedTo: string[];
+  visibility: EventVisibility;
+  visibleToHouseholds: string[];
+  visibleToUsers: string[];
+  viewerIds: string[];
+  blockerIds: string[];
+  color?: string;
+  createdAt: Timestamp;
+}
+
+// Client-side view model: adds isBlocker flag computed from which query matched
+export interface CalendarEventView extends CalendarEvent {
+  isBlocker: boolean;
+}

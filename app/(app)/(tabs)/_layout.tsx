@@ -1,6 +1,7 @@
 import { Text } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useTheme } from '../../../src/hooks/useTheme';
+import { CalendarTabIcon } from '../../../src/components/CalendarTabIcon';
 
 export default function TabsLayout() {
   const c = useTheme();
@@ -11,14 +12,14 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.textSecondary,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: c.card,
           borderTopColor: c.border,
           borderTopWidth: 1,
           height: 72,
-          paddingBottom: 10,
-          paddingTop: 6,
+          paddingBottom: 12,
+          paddingTop: 10,
         },
       }}
     >
@@ -28,18 +29,17 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="todos"
-        options={{
-          title: 'To-Dos',
-          tabBarIcon: ({ color }) => <TabIcon label="✓" color={color} />,
-        }}
+        options={{ title: 'To-Dos', tabBarIcon: ({ color }) => <TabIcon label="✓" color={color} /> }}
       />
       <Tabs.Screen
         name="shopping"
-        options={{
-          title: 'Einkauf',
-          tabBarIcon: ({ color }) => <TabIcon label="🛒" color={color} />,
-        }}
+        options={{ title: 'Einkauf', tabBarIcon: ({ color }) => <TabIcon label="🛒" color={color} /> }}
       />
+      <Tabs.Screen
+        name="calendar"
+        options={{ title: 'Kalender', tabBarIcon: ({ color }) => <CalendarTabIcon color={color} size={26} /> }}
+      />
+      {/* Haushalt immer ganz rechts – neue Tabs vor diesem Screen einfügen */}
       <Tabs.Screen
         name="household"
         options={{ title: 'Haushalt', tabBarIcon: ({ color }) => <TabIcon label="⚙" color={color} /> }}
@@ -49,5 +49,5 @@ export default function TabsLayout() {
 }
 
 function TabIcon({ label, color }: { label: string; color: string }) {
-  return <Text style={{ color, fontSize: 18 }}>{label}</Text>;
+  return <Text style={{ color, fontSize: 26 }}>{label}</Text>;
 }
