@@ -12,6 +12,7 @@ import i18n from '../i18n';
 interface Props {
   event: CalendarEvent;
   onPress: () => void;
+  hasConflict?: boolean;
 }
 
 const makeStyles = (c: Colors) => StyleSheet.create({
@@ -33,10 +34,21 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   title: {
+    flex: 1,
     fontSize: 15,
     fontWeight: '600',
     color: c.text,
+  },
+  conflictBadge: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: c.warning,
   },
   meta: {
     fontSize: 12,
@@ -50,7 +62,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   },
 });
 
-export function EventCard({ event, onPress }: Props) {
+export function EventCard({ event, onPress, hasConflict = false }: Props) {
   const c = useTheme();
   const styles = useMemo(() => makeStyles(c), [c]);
   const household = useHouseholdStore((s) => s.household);
@@ -66,7 +78,10 @@ export function EventCard({ event, onPress }: Props) {
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={[styles.strip, { backgroundColor: stripColor }]} />
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
+          {hasConflict && <Text style={styles.conflictBadge}>⚠</Text>}
+        </View>
         <Text style={styles.meta}>{timeLabel}</Text>
         {!!event.location && (
           <Text style={styles.meta} numberOfLines={1}>📍 {event.location}</Text>

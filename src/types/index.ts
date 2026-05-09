@@ -63,6 +63,15 @@ export interface ShoppingCategory {
   createdAt: Timestamp;
 }
 
+export interface ShoppingLabel {
+  id: string;
+  householdId: string;
+  name: string;
+  color: string;
+  sortOrder: number;
+  createdAt: Timestamp;
+}
+
 export interface ShoppingItem {
   id: string;
   householdId: string;
@@ -72,6 +81,23 @@ export interface ShoppingItem {
   bought: boolean;
   boughtAt: Timestamp | null;
   createdBy: string;
+  createdAt: Timestamp;
+  labelId?: string | null;
+  labelSortOrder?: number;
+}
+
+export interface ShoppingTemplateItem {
+  name: string;
+  quantity: number;
+  labelId?: string | null;
+}
+
+export interface ShoppingTemplate {
+  id: string;
+  householdId: string;
+  name: string;
+  createdBy: string;
+  items: ShoppingTemplateItem[];
   createdAt: Timestamp;
 }
 
@@ -89,6 +115,9 @@ export interface AppUser {
   photoURL?: string | null;
   avatarColor?: string | null;
   themePreference?: ThemePreference;
+  notificationMorningHour?: number;
+  notificationMorningMinute?: number;
+  notificationPreEventMinutes?: number;
 }
 
 export type EventVisibility = 'private' | 'household' | 'contacts' | 'custom';

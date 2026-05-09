@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  KeyboardAvoidingView, Platform, Switch, Alert,
+  KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,7 @@ import { Colors, SPACING } from '../../../src/constants';
 import { EVENT_COLORS } from '../../../src/constants/eventColors';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useDiscardGuard } from '../../../src/hooks/useDiscardGuard';
-import { CalendarEvent, EventVisibility, Household, HouseholdMember } from '../../../src/types';
+import { EventVisibility, Household, HouseholdMember } from '../../../src/types';
 
 const VISIBILITY_OPTIONS: { value: EventVisibility; labelKey: string }[] = [
   { value: 'private', labelKey: 'calendar.visPrivate' },
@@ -41,7 +41,7 @@ function roundToNextHour(d: Date): Date {
 export default function CreateEventScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { edit: editId } = useLocalSearchParams<{ edit?: string }>();
+  const { edit: editId, date: dateParam } = useLocalSearchParams<{ edit?: string; date?: string }>();
   const isEditing = !!editId;
 
   const appUser = useAuthStore((s) => s.appUser);
@@ -58,13 +58,17 @@ export default function CreateEventScreen() {
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [allDay, setAllDay] = useState(false);
-  const [startDate, setStartDate] = useState<Date>(roundToNextHour(new Date()));
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const base = dateParam ? new Date(dateParam) : new Date();
+    return roundToNextHour(base);
+  });
   const [endDate, setEndDate] = useState<Date>(() => {
-    const d = roundToNextHour(new Date());
+    const base = dateParam ? new Date(dateParam) : new Date();
+    const d = roundToNextHour(base);
     d.setHours(d.getHours() + 1);
     return d;
   });
-  const [color, setColor] = useState(EVENT_COLORS[0]);
+  const [color, setColor] = useState<typeof EVENT_COLORS[number]>(EVENT_COLORS[0]);
   const [visibility, setVisibility] = useState<EventVisibility>('household');
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const [visibleToHouseholds, setVisibleToHouseholds] = useState<string[]>([]);
@@ -76,6 +80,23 @@ export default function CreateEventScreen() {
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [allHouseholds, setAllHouseholds] = useState<Household[]>([]);
+
+  const allEvents = useEventsStore((s) => s.events);
+  const conflictingEvents = useMemo(() => {
+    if (allDay || !appUser) return [];
+    const assigneeSet = new Set<string>([appUser.uid, ...assignedTo]);
+    return allEvents.filter((e) => {
+      if (e.id === editId) return false;
+      if (e.allDay) return false;
+      const eStart = e.startDate.toMillis();
+      const eEnd = e.endDate.toMillis();
+      const nStart = startDate.getTime();
+      const nEnd = endDate.getTime();
+      if (eStart >= nEnd || eEnd <= nStart) return false;
+      const involved = new Set([...e.assignedTo, e.authorId]);
+      return [...assigneeSet].some((id) => involved.has(id));
+    });
+  }, [allEvents, allDay, assignedTo, startDate, endDate, appUser, editId]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -263,6 +284,7 @@ export default function CreateEventScreen() {
               value={startDate}
               mode={datePickerMode}
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              textColor={c.text}
               onChange={(_, date) => {
                 if (Platform.OS !== 'ios') setShowStartPicker(false);
                 if (date) {
@@ -296,6 +318,7 @@ export default function CreateEventScreen() {
                   mode="datetime"
                   minimumDate={startDate}
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  textColor={c.text}
                   onChange={(_, date) => {
                     if (Platform.OS !== 'ios') setShowEndPicker(false);
                     if (date) setEndDate(date);
@@ -405,6 +428,20 @@ export default function CreateEventScreen() {
               );
             })}
           </View>
+
+          {conflictingEvents.length > 0 && (
+            <View style={styles.conflictBox}>
+              <Text style={styles.conflictTitle}>⚠ {t('calendar.conflictWarning')}</Text>
+              {conflictingEvents.slice(0, 3).map((e, i) => (
+                <Text key={i} style={styles.conflictItem}>
+                  · {e.isBlocker ? t('calendar.conflictBusy') : e.title}
+                </Text>
+              ))}
+              {conflictingEvents.length > 3 && (
+                <Text style={styles.conflictItem}>+{conflictingEvents.length - 3} {t('calendar.conflictMore')}</Text>
+              )}
+            </View>
+          )}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -521,4 +558,14 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   memberName: { flex: 1, fontSize: 14, color: c.text },
   selectedMark: { color: c.primary, fontSize: 16, fontWeight: '700' },
   error: { color: c.danger, fontSize: 14 },
+  conflictBox: {
+    backgroundColor: c.warningLight,
+    borderRadius: 10,
+    padding: SPACING.sm,
+    borderWidth: 1,
+    borderColor: c.warning,
+    gap: 4,
+  },
+  conflictTitle: { fontSize: 13, fontWeight: '700', color: c.warning },
+  conflictItem: { fontSize: 12, color: c.text },
 });
