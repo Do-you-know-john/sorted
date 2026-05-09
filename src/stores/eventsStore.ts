@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { CalendarEvent } from '../types';
+import { CalendarEventView } from '../types';
 
 interface EventsState {
-  events: CalendarEvent[];
-  setEvents: (events: CalendarEvent[]) => void;
+  events: CalendarEventView[];
+  setEvents: (events: CalendarEventView[]) => void;
 }
 
 export const useEventsStore = create<EventsState>((set) => ({

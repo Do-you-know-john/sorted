@@ -14,7 +14,7 @@ import { useTheme } from '../../../../src/hooks/useTheme';
 import { useEvents } from '../../../../src/hooks/useEvents';
 import { useAuthStore } from '../../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../../src/stores/householdStore';
-import { CalendarEvent, HouseholdMember } from '../../../../src/types';
+import { CalendarEventView, HouseholdMember } from '../../../../src/types';
 import { Colors, SPACING } from '../../../../src/constants';
 import { Avatar } from '../../../../src/components/Avatar';
 import { HouseholdSwitcher } from '../../../../src/components/HouseholdSwitcher';
@@ -38,7 +38,7 @@ function mondayFirstOffset(date: Date): number {
 interface MonthGridProps {
   currentMonth: Date;
   selectedDay: Date;
-  events: CalendarEvent[];
+  events: CalendarEventView[];
   onSelectDay: (day: Date) => void;
   c: Colors;
 }
@@ -102,7 +102,7 @@ function MonthGrid({ currentMonth, selectedDay, events, onSelectDay, c }: MonthG
                   {dayEvents.slice(0, 3).map((e, ei) => (
                     <View
                       key={ei}
-                      style={[styles.dot, { backgroundColor: e.color ?? c.primary }]}
+                      style={[styles.dot, { backgroundColor: e.isBlocker ? c.textSecondary : (e.color ?? c.primary) }]}
                     />
                   ))}
                 </View>
@@ -233,6 +233,33 @@ const makeFilterStyles = (c: Colors) => StyleSheet.create({
   },
 });
 
+function BlockerCard({ event, c }: { event: CalendarEventView; c: Colors }) {
+  const timeLabel = event.allDay
+    ? (i18n.language === 'de' ? 'Ganztägig' : 'All day')
+    : `${format(event.startDate.toDate(), 'HH:mm')} – ${format(event.endDate.toDate(), 'HH:mm')}`;
+  return (
+    <View style={{
+      flexDirection: 'row',
+      backgroundColor: c.card,
+      borderRadius: 12,
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+      opacity: 0.7,
+    }}>
+      <View style={{ width: 4, backgroundColor: c.textSecondary }} />
+      <View style={{ flex: 1, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: c.textSecondary }}>
+          {i18n.language === 'de' ? 'Beschäftigt' : 'Busy'}
+        </Text>
+        <Text style={{ fontSize: 12, color: c.textSecondary, marginTop: 2 }}>{timeLabel}</Text>
+      </View>
+    </View>
+  );
+}
+
 const makeStyles = (c: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   header: {
@@ -336,12 +363,17 @@ export default function CalendarScreen() {
   }, [events, currentMonth]);
 
   const filteredMonthEvents = useMemo(() => {
-    if (selectedPersonIds.length === 0) return monthEvents;
-    return monthEvents.filter(
-      (e) =>
-        e.assignedTo.length === 0 ||
-        selectedPersonIds.some((id) => e.assignedTo.includes(id)),
-    );
+    return monthEvents.filter((e) => {
+      if (e.isBlocker) {
+        // Blocker events only appear when a person filter is active and the person is involved
+        if (selectedPersonIds.length === 0) return false;
+        const involved = [...e.assignedTo, e.authorId];
+        return selectedPersonIds.some((id) => involved.includes(id));
+      }
+      // Full-access events: apply person filter normally
+      if (selectedPersonIds.length === 0) return true;
+      return e.assignedTo.length === 0 || selectedPersonIds.some((id) => e.assignedTo.includes(id));
+    });
   }, [monthEvents, selectedPersonIds]);
 
   const dayEvents = useMemo(() => {
@@ -426,13 +458,17 @@ export default function CalendarScreen() {
         {dayEvents.length === 0 ? (
           <Text style={styles.noEvents}>{t('calendar.noEvents')}</Text>
         ) : (
-          dayEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              onPress={() => router.push(`/(app)/events/${event.id}` as any)}
-            />
-          ))
+          dayEvents.map((event) =>
+            event.isBlocker ? (
+              <BlockerCard key={event.id} event={event} c={c} />
+            ) : (
+              <EventCard
+                key={event.id}
+                event={event}
+                onPress={() => router.push(`/(app)/events/${event.id}` as any)}
+              />
+            ),
+          )
         )}
 
         <View style={{ height: 100 }} />

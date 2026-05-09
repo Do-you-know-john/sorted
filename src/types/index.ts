@@ -108,6 +108,12 @@ export interface CalendarEvent {
   visibleToHouseholds: string[];
   visibleToUsers: string[];
   viewerIds: string[];
+  blockerIds: string[];
   color?: string;
   createdAt: Timestamp;
+}
+
+// Client-side view model: adds isBlocker flag computed from which query matched
+export interface CalendarEventView extends CalendarEvent {
+  isBlocker: boolean;
 }

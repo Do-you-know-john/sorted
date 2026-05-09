@@ -12,8 +12,8 @@ import { useAuthStore } from '../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../src/stores/householdStore';
 import { useEventsStore } from '../../../src/stores/eventsStore';
 import {
-  createEvent, updateEvent, computeViewerIds, fetchHouseholdsByIds,
-  CreateEventInput,
+  createEvent, updateEvent, computeViewerIds, computeBlockerIds,
+  fetchHouseholdsByIds, CreateEventInput,
 } from '../../../src/services/events';
 import { Button } from '../../../src/components/ui/Button';
 import { TextInput } from '../../../src/components/ui/TextInput';
@@ -94,12 +94,12 @@ export default function CreateEventScreen() {
     }
   }, [existingEvent]);
 
-  // Fetch all households when contacts/custom visibility is selected
+  // Always fetch all households on mount — needed for blockerIds computation regardless of visibility
   useEffect(() => {
-    if ((visibility === 'contacts' || visibility === 'custom') && appUser && allHouseholds.length === 0) {
+    if (appUser && allHouseholds.length === 0) {
       fetchHouseholdsByIds(appUser.householdIds).then(setAllHouseholds);
     }
-  }, [visibility, appUser]);
+  }, [appUser]);
 
   const isDirty = !submitted && title.trim().length > 0;
   useDiscardGuard(isDirty);
@@ -159,6 +159,8 @@ export default function CreateEventScreen() {
         visibleToUsers,
       );
 
+      const blockerIds = computeBlockerIds(appUser.uid, householdsForCompute, viewerIds);
+
       const input: CreateEventInput = {
         title: title.trim(),
         description: description.trim(),
@@ -175,9 +177,9 @@ export default function CreateEventScreen() {
       };
 
       if (isEditing && editId) {
-        await updateEvent(editId, { ...input, viewerIds });
+        await updateEvent(editId, { ...input, viewerIds, blockerIds });
       } else {
-        await createEvent(input, appUser.uid, viewerIds);
+        await createEvent(input, appUser.uid, viewerIds, blockerIds);
       }
 
       setSubmitted(true);

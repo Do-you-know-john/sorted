@@ -3,7 +3,7 @@ import {
   onSnapshot, query, where, serverTimestamp, Timestamp, getDocs,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { CalendarEvent, EventVisibility, Household } from '../types';
+import { CalendarEvent, CalendarEventView, EventVisibility, Household } from '../types';
 
 export interface CreateEventInput {
   title: string;
@@ -51,6 +51,21 @@ export function computeViewerIds(
   return Array.from(ids);
 }
 
+// All contacts of the author (members of all shared households) who are NOT already viewers.
+// These people see the event only as an opaque blocker when they filter by an assignee.
+export function computeBlockerIds(
+  authorId: string,
+  allAuthorHouseholds: Household[],
+  viewerIds: string[],
+): string[] {
+  const viewerSet = new Set(viewerIds);
+  const allContacts = new Set<string>();
+  allAuthorHouseholds.forEach((h) =>
+    Object.keys(h.members).forEach((id) => allContacts.add(id)),
+  );
+  return Array.from(allContacts).filter((id) => !viewerSet.has(id) && id !== authorId);
+}
+
 export async function fetchHouseholdsByIds(ids: string[]): Promise<Household[]> {
   if (ids.length === 0) return [];
   const results: Household[] = [];
@@ -68,6 +83,7 @@ export async function createEvent(
   input: CreateEventInput,
   authorId: string,
   viewerIds: string[],
+  blockerIds: string[],
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'events'), {
     title: input.title,
@@ -83,6 +99,7 @@ export async function createEvent(
     visibleToHouseholds: input.visibleToHouseholds,
     visibleToUsers: input.visibleToUsers,
     viewerIds,
+    blockerIds,
     color: input.color,
     createdAt: serverTimestamp(),
   });
@@ -91,7 +108,7 @@ export async function createEvent(
 
 export async function updateEvent(
   eventId: string,
-  updates: Partial<CreateEventInput> & { viewerIds?: string[] },
+  updates: Partial<CreateEventInput> & { viewerIds?: string[]; blockerIds?: string[] },
 ): Promise<void> {
   const data: Record<string, unknown> = { ...updates };
   if (updates.startDate) data.startDate = Timestamp.fromDate(updates.startDate);
@@ -103,21 +120,46 @@ export async function deleteEvent(eventId: string): Promise<void> {
   await deleteDoc(doc(db, 'events', eventId));
 }
 
+// Two parallel listeners: one for full-access events (viewerIds), one for blocker-only events
+// (blockerIds). Results are merged; blocker events hidden behind viewer events if both match.
 export function subscribeToEvents(
   uid: string,
-  onData: (events: CalendarEvent[]) => void,
+  onData: (events: CalendarEventView[]) => void,
   onError?: (e: Error) => void,
 ): () => void {
-  const q = query(
-    collection(db, 'events'),
-    where('viewerIds', 'array-contains', uid),
-  );
-  return onSnapshot(
-    q,
+  let fullMap = new Map<string, CalendarEvent>();
+  let blockerMap = new Map<string, CalendarEvent>();
+
+  function emit() {
+    const result: CalendarEventView[] = [];
+    fullMap.forEach((e) => result.push({ ...e, isBlocker: false }));
+    blockerMap.forEach((e, id) => {
+      if (!fullMap.has(id)) result.push({ ...e, isBlocker: true });
+    });
+    onData(result);
+  }
+
+  const unsub1 = onSnapshot(
+    query(collection(db, 'events'), where('viewerIds', 'array-contains', uid)),
     (snap) => {
-      const events = snap.docs.map((d) => ({ id: d.id, ...d.data() } as CalendarEvent));
-      onData(events);
+      fullMap = new Map(
+        snap.docs.map((d) => [d.id, { id: d.id, ...d.data() } as CalendarEvent]),
+      );
+      emit();
     },
     onError,
   );
+
+  const unsub2 = onSnapshot(
+    query(collection(db, 'events'), where('blockerIds', 'array-contains', uid)),
+    (snap) => {
+      blockerMap = new Map(
+        snap.docs.map((d) => [d.id, { id: d.id, ...d.data() } as CalendarEvent]),
+      );
+      emit();
+    },
+    onError,
+  );
+
+  return () => { unsub1(); unsub2(); };
 }
