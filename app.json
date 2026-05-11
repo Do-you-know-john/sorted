@@ -16,8 +16,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sorted.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Um dein Profilbild festzulegen.",
+        "NSUserNotificationUsageDescription": "Um dich an Termine und Aufgaben zu erinnern."
       }
     },
     "android": {
