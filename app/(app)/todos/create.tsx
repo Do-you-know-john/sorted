@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { openAndroidPicker } from '../../../src/utils/datePicker';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useAllHouseholds } from '../../../src/hooks/useAllHouseholds';
 import { createTodo } from '../../../src/services/todos';
@@ -150,45 +151,65 @@ export default function CreateTodoScreen() {
           <Text style={styles.sectionLabel}>{t('todos.dueWindow')}</Text>
 
           <Text style={styles.subLabel}>{t('todos.dueFrom')}</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDueFromPicker(true)}>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => {
+              if (Platform.OS === 'android') {
+                openAndroidPicker(dueFrom ?? new Date(), 'datetime', (date) => {
+                  setDueFrom(date);
+                  if (!dueUntilManuallySet) setDueDate(new Date(date.getTime() + 24 * 3600_000));
+                });
+              } else {
+                setShowDueFromPicker(true);
+              }
+            }}
+          >
             <Text style={styles.dateButtonText}>
               {dueFrom
                 ? format(dueFrom, 'MMM d, yyyy · HH:mm', { locale: dateLocale })
                 : t('todos.immediately')}
             </Text>
           </TouchableOpacity>
-          {showDueFromPicker && (
+          {Platform.OS === 'ios' && showDueFromPicker && (
             <DateTimePicker
               value={dueFrom ?? new Date()}
               mode="datetime"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              display="inline"
               onChange={(_, date) => {
-                setShowDueFromPicker(Platform.OS === 'ios');
                 if (date) {
                   setDueFrom(date);
-                  if (!dueUntilManuallySet) {
-                    setDueDate(new Date(date.getTime() + 24 * 3600_000));
-                  }
+                  if (!dueUntilManuallySet) setDueDate(new Date(date.getTime() + 24 * 3600_000));
                 }
               }}
             />
           )}
 
           <Text style={[styles.subLabel, { marginTop: SPACING.sm }]}>{t('todos.dueUntil')}</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDueDatePicker(true)}>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => {
+              if (Platform.OS === 'android') {
+                openAndroidPicker(dueDate ?? new Date(), 'datetime', (date) => {
+                  setDueDate(date);
+                  setDueUntilManuallySet(true);
+                });
+              } else {
+                setShowDueDatePicker(true);
+              }
+            }}
+          >
             <Text style={styles.dateButtonText}>
               {dueDate
                 ? format(dueDate, 'MMM d, yyyy · HH:mm', { locale: dateLocale })
                 : t('todos.noDueDate')}
             </Text>
           </TouchableOpacity>
-          {showDueDatePicker && (
+          {Platform.OS === 'ios' && showDueDatePicker && (
             <DateTimePicker
               value={dueDate ?? new Date()}
               mode="datetime"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              display="inline"
               onChange={(_, date) => {
-                setShowDueDatePicker(Platform.OS === 'ios');
                 if (date) { setDueDate(date); setDueUntilManuallySet(true); }
               }}
             />

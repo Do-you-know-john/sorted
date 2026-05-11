@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { openAndroidPicker } from '../../../src/utils/datePicker';
 import { format } from 'date-fns';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useHouseholdStore } from '../../../src/stores/householdStore';
@@ -270,7 +271,16 @@ export default function CreateEventScreen() {
             <Text style={styles.fieldLabel}>{t('calendar.startDate')}</Text>
             <TouchableOpacity
               style={styles.datePill}
-              onPress={() => setShowStartPicker((v) => !v)}
+              onPress={() => {
+                if (Platform.OS === 'android') {
+                  openAndroidPicker(startDate, datePickerMode, (date) => {
+                    setStartDate(date);
+                    if (date >= endDate) setEndDate(new Date(date.getTime() + 60 * 60 * 1000));
+                  });
+                } else {
+                  setShowStartPicker((v) => !v);
+                }
+              }}
             >
               <Text style={styles.datePillText}>
                 {allDay
@@ -279,20 +289,16 @@ export default function CreateEventScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-          {showStartPicker && (
+          {Platform.OS === 'ios' && showStartPicker && (
             <DateTimePicker
               value={startDate}
               mode={datePickerMode}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display="spinner"
               textColor={c.text}
               onChange={(_, date) => {
-                if (Platform.OS !== 'ios') setShowStartPicker(false);
                 if (date) {
                   setStartDate(date);
-                  if (date >= endDate) {
-                    const newEnd = new Date(date.getTime() + 60 * 60 * 1000);
-                    setEndDate(newEnd);
-                  }
+                  if (date >= endDate) setEndDate(new Date(date.getTime() + 60 * 60 * 1000));
                 }
               }}
             />
@@ -305,22 +311,27 @@ export default function CreateEventScreen() {
                 <Text style={styles.fieldLabel}>{t('calendar.endDate')}</Text>
                 <TouchableOpacity
                   style={styles.datePill}
-                  onPress={() => setShowEndPicker((v) => !v)}
+                  onPress={() => {
+                    if (Platform.OS === 'android') {
+                      openAndroidPicker(endDate, 'datetime', setEndDate, { minimumDate: startDate });
+                    } else {
+                      setShowEndPicker((v) => !v);
+                    }
+                  }}
                 >
                   <Text style={styles.datePillText}>
                     {format(endDate, 'dd.MM.yyyy HH:mm')}
                   </Text>
                 </TouchableOpacity>
               </View>
-              {showEndPicker && (
+              {Platform.OS === 'ios' && showEndPicker && (
                 <DateTimePicker
                   value={endDate}
                   mode="datetime"
                   minimumDate={startDate}
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  display="spinner"
                   textColor={c.text}
                   onChange={(_, date) => {
-                    if (Platform.OS !== 'ios') setShowEndPicker(false);
                     if (date) setEndDate(date);
                   }}
                 />

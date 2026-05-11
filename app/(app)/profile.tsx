@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { openAndroidPicker } from '../../src/utils/datePicker';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -309,20 +310,33 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('profile.notifications')}</Text>
           <Text style={styles.settingLabel}>{t('profile.notifMorningTime')}</Text>
-          <TouchableOpacity style={styles.timeBtn} onPress={() => setShowTimePicker(true)}>
+          <TouchableOpacity
+            style={styles.timeBtn}
+            onPress={() => {
+              if (Platform.OS === 'android') {
+                const d = new Date();
+                d.setHours(morningHour, morningMinute, 0, 0);
+                openAndroidPicker(d, 'time', (date) => {
+                  setMorningHour(date.getHours());
+                  setMorningMinute(date.getMinutes());
+                }, { is24Hour: true });
+              } else {
+                setShowTimePicker(true);
+              }
+            }}
+          >
             <Text style={styles.timeBtnText}>
               {String(morningHour).padStart(2, '0')}:{String(morningMinute).padStart(2, '0')}
             </Text>
           </TouchableOpacity>
-          {showTimePicker && (
+          {Platform.OS === 'ios' && showTimePicker && (
             <DateTimePicker
               value={(() => { const d = new Date(); d.setHours(morningHour, morningMinute, 0, 0); return d; })()}
               mode="time"
               is24Hour
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display="spinner"
               textColor={c.text}
               onChange={(_, date) => {
-                setShowTimePicker(Platform.OS === 'ios');
                 if (date) {
                   setMorningHour(date.getHours());
                   setMorningMinute(date.getMinutes());
