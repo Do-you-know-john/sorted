@@ -25,5 +25,7 @@ export function useNotificationScheduler() {
     }, 3000);
 
     return () => clearTimeout(timerRef.current);
-  }, [events, appUser]);
+  // Use primitives instead of the appUser object to avoid re-triggering
+  // on every Firestore snapshot that creates a new object reference.
+  }, [events, appUser?.uid, appUser?.notificationMorningHour, appUser?.notificationMorningMinute, appUser?.notificationPreEventMinutes]);
 }

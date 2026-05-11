@@ -38,7 +38,9 @@ export default function RootLayout() {
     } else if (firebaseUser && inApp && appUser && !hasHousehold) {
       router.replace('/(app)/household/setup');
     }
-  }, [firebaseUser, appUser, isLoading]);
+  // Use primitive deps to avoid re-triggering on every Firestore snapshot
+  // that recreates the appUser/firebaseUser object with the same values.
+  }, [firebaseUser?.uid, appUser?.uid, appUser?.activeHouseholdId, appUser?.householdIds?.length, isLoading, segments[0]]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
