@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Appearance, Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuthListener } from '../src/hooks/useAuth';
@@ -17,11 +17,16 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
+  // Ref keeps segments readable inside the effect without making them a
+  // reactive dependency — navigation must not re-trigger the routing effect.
+  const segmentsRef = useRef(segments);
+  segmentsRef.current = segments;
+
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuth = segments[0] === '(auth)';
-    const inApp = segments[0] === '(app)';
+    const inAuth = segmentsRef.current[0] === '(auth)';
+    const inApp = segmentsRef.current[0] === '(app)';
 
     const hasHousehold =
       !!appUser?.activeHouseholdId || (appUser?.householdIds?.length ?? 0) > 0;
@@ -32,15 +37,12 @@ export default function RootLayout() {
       if (hasHousehold) {
         router.replace('/(app)/(tabs)/(home)');
       } else if (appUser) {
-        // appUser loaded and confirmed no households
         router.replace('/(app)/household/setup');
       }
     } else if (firebaseUser && inApp && appUser && !hasHousehold) {
       router.replace('/(app)/household/setup');
     }
-  // Use primitive deps to avoid re-triggering on every Firestore snapshot
-  // that recreates the appUser/firebaseUser object with the same values.
-  }, [firebaseUser?.uid, appUser?.uid, appUser?.activeHouseholdId, appUser?.householdIds?.length, isLoading, segments[0]]);
+  }, [firebaseUser?.uid, appUser?.uid, appUser?.activeHouseholdId, appUser?.householdIds?.length, isLoading]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
