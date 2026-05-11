@@ -27,8 +27,7 @@
       },
       "package": "com.sorted.app",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "googleServicesFile": "$GOOGLE_SERVICES_JSON"
+      "predictiveBackGestureEnabled": false
     },
     "plugins": [
       "expo-router",
