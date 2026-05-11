@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sorted.app",
+      "bundleIdentifier": "io.mainwerk.app",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.sorted.app",
+      "package": "io.mainwerk.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
