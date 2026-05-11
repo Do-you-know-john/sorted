@@ -22,6 +22,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   error: { color: c.danger, fontSize: 14 },
   link: { textAlign: 'center', color: c.textSecondary, fontSize: 14 },
   linkBold: { color: c.primary, fontWeight: '600' },
+  showToggle: { fontSize: 13, fontWeight: '600' },
 });
 
 export default function LoginScreen() {
@@ -29,6 +30,7 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -67,8 +69,15 @@ export default function LoginScreen() {
             label={t('auth.password')}
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             placeholder={t('auth.passwordPlaceholder')}
+            rightElement={
+              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+                <Text style={[styles.showToggle, { color: c.primary }]}>
+                  {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                </Text>
+              </TouchableOpacity>
+            }
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Button label={t('auth.login')} onPress={handleLogin} loading={loading} />

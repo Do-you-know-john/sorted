@@ -22,6 +22,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   error: { color: c.danger, fontSize: 14 },
   link: { textAlign: 'center', color: c.textSecondary, fontSize: 14 },
   linkBold: { color: c.primary, fontWeight: '600' },
+  showToggle: { fontSize: 13, fontWeight: '600' },
 });
 
 export default function RegisterScreen() {
@@ -30,6 +31,9 @@ export default function RegisterScreen() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -37,8 +41,9 @@ export default function RegisterScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
 
   async function handleRegister() {
-    if (!displayName || !email || !password) { setError(t('auth.fillAllFields')); return; }
+    if (!displayName || !email || !password || !confirmPassword) { setError(t('auth.fillAllFields')); return; }
     if (password.length < 6) { setError(t('auth.passwordMinLength')); return; }
+    if (password !== confirmPassword) { setError(t('auth.passwordMismatch')); return; }
     setError('');
     setLoading(true);
     try {
@@ -70,8 +75,29 @@ export default function RegisterScreen() {
             label={t('auth.password')}
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             placeholder={t('auth.passwordMin')}
+            rightElement={
+              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+                <Text style={[styles.showToggle, { color: c.primary }]}>
+                  {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                </Text>
+              </TouchableOpacity>
+            }
+          />
+          <TextInput
+            label={t('auth.confirmPassword')}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showConfirmPassword}
+            placeholder={t('auth.confirmPasswordPlaceholder')}
+            rightElement={
+              <TouchableOpacity onPress={() => setShowConfirmPassword((v) => !v)}>
+                <Text style={[styles.showToggle, { color: c.primary }]}>
+                  {showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                </Text>
+              </TouchableOpacity>
+            }
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Button label={t('auth.register')} onPress={handleRegister} loading={loading} />
